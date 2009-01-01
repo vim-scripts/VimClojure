@@ -1,0 +1,6 @@
+
+  version.txt -- Version Information for vimclojure (syntax: Text)
+  [automatically generated and maintained by GNU shtool]
+
+  This is vimclojure, Version 1.3.0 (01-Jan-2009)
+

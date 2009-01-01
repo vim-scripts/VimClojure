@@ -1,0 +1,23 @@
+CLOJURE						*clojure.vim* *ft-clj-syntax*
+
+The clojure syntax highlighting provides two options:
+>
+	g:clj_highlight_builtins
+		If it exists and is nonzero, then Clojure's builtin functions
+		are highlighted. This useful to distuingish macros and special
+		forms from functions.
+
+	g:clj_highlight_contrib
+		If it exists and is nonzero, then Clojure-Contrib's functions
+		are highlighted.
+
+	g:clj_paren_rainbow
+		If it exists and is nonzero, then differing levels of
+		parenthesisation will receive different highlighting.
+<
+The g:clj_paren_rainbow option provides 10 levels of individual colorisation
+for the parentheses. Because of the quantity of colorisation levels, unlike
+non-rainbow highlighting, the rainbow mode specifies its highlighting using
+ctermfg and guifg, thereby bypassing the usual colorscheme control using
+standard highlighting groups. The actual highlighting used depends on the
+dark/bright setting  (see |'bg'|).

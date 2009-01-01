@@ -1,0 +1,13 @@
+This is a mirror of http://www.vim.org/scripts/script.php?script_id=2501
+
+This package contains a filetype, a syntax and an indent plugin
+for the Clojure (http://clojure.org) programming language.
+
+Since version 2.0, it also contains the interactive part formerly known as "Gorilla".
+This includes:
+* docstring lookup
+* javadoc lookup
+* repl in a vim buffer
+* omni completion
+
+
