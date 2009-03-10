@@ -1,26 +1,79 @@
-___    ______           ______________     ________                    
-__ |  / /__(_)______ _____  ____/__  /___________(_)___  _____________ 
+___    ______           ______________     ________
+__ |  / /__(_)______ _____  ____/__  /___________(_)___  _____________
 __ | / /__  /__  __ `__ \  /    __  /_  __ \____  /_  / / /_  ___/  _ \
 __ |/ / _  / _  / / / / / /___  _  / / /_/ /___  / / /_/ /_  /   /  __/
-_____/  /_/  /_/ /_/ /_/\____/  /_/  \____/___  /  \__,_/ /_/    \___/ 
-                                           /___/                       
+_____/  /_/  /_/ /_/ /_/\____/  /_/  \____/___  /  \__,_/ /_/    \___/
+                                           /___/
 
-This archive contains a syntax file, a filetype plugin and an indent plugin
-for clojure.
+VimClojure – a Clojure environment for Vim
+==========================================
 
-The syntax is maintained by Toralf Wittner <toralf.wittner@gmail.com>. I
-included it with his permission. All kudos for the highlighting go to Toralf.
+VimClojure is one of the most sophisticated editing environments for Clojure.
+It provides syntax highlighting, indenting and command completion.
 
-Additionally I created a filetype and indent plugin. The blame for those go to
-me. The indent pugin now also works with the vectors ([]) and maps ({}). The
-ftplugin now comes with a completion dictionary. Since Clojure is still rather
-evolving the completions might get outdated overtime. For this the generation
-script by Parth Malwankar is included with his permission.
+If requested it also provides a SLIME like interface to dynamically work with
+Clojure code. For this to work the included Nailgun server must be running.
+Remote may be forwarded via ssh.
 
-To setup the plugins copy the contents of this archive to your ~/.vim directory.
-The ftdetect/clojure.vim sets up an autocommand to automatically detect .clj
-files as clojure files. The rest works automagically when you enabled the
-corresponding features (see :help :filetype).
+Features of the interactive interface are:
 
--- Meikel Brandmeyer <mb@kotka.de>
-   Frankfurt am Main, August 16th 2008
+- dynamic documentation lookup
+- dynamic javadoc lookup (in an external browser)
+- Repl running in a Vim buffer
+- smart omni completion
+- easy evaluation of code in a buffer
+
+To activate the interactive interface define the clj_want_gorilla variable
+in your .vimrc: let clj_want_gorilla = 1
+
+Requirements
+============
+
+Please make sure that the following options are set in your .vimrc:
+
+––8<––––8<––––8<––
+syntax on
+filetype plugin indent on
+––8<––––8<––––8<––
+
+Otherwise the filetype is not activated, and hence VimClojure doesn't work.
+
+Building the Nailgun interface
+==============================
+
+To build the Nailgun interface, create a local.properties file that contains
+the path to your clojure.jar and clojure-contrib.jar. The file should look
+similar to:
+
+––8<––––8<––––8<––
+clojure.jar=/path/to/clojure.jar
+clojure-contrib.jar=/path/to/clojure-contrib.jar
+nailgun-client=ng
+––8<––––8<––––8<––
+
+Once you have created this file, simply run ant. This should give a
+vimclojure.jar containing the server part and the nailgun client. Note for
+Windows users: please leave out the last line in the properties file. The
+windows client for nailgun is included in the distribution as ng.exe. Delete
+it only in case you are sure, that you can rebuild it. You may see an error
+when building the nailgun-client. That's ok.
+
+To run the Nailgun server you need the clojure.jar, clojure-contrib.jar and
+vimclojure.jar in your Classpath:
+
+java -cp /path/to/clojure.jar:/path/to/clojure-contrib.jar:/path/to/vimclojure.jar com.martiansoftware.nailgun.NGServer 127.0.0.1
+
+There is also a launcher script included in the bin subdirectory based on
+Stephen C. Gilardi's clj-env-dir launcher. Set the environment variable
+CLOJURE_EXT to the name of a directory containing the jars and (possibly
+links to) subdirectories you want in your classpath. Additionally the
+CLASSPATH environment variable will be added to the classpath.
+
+Put the nailgun client somewhere into your PATH or specify the location in
+your .vimrc.
+
+Please refer to the online documentation in the doc folder for further
+information on how to use VimClojure, its features and its caveats.
+
+Meikel Branmdeyer <mb@kotka.de>
+Frankfurt am Main, 2009

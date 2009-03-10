@@ -53,4 +53,83 @@ for ns in ['clojure.core', 'clojure.set', 'clojure.xml', 'clojure.zip']
 	call vimclojure#AddCompletions(ns)
 endfor
 
+" Define toplevel folding if desired.
+function! ClojureGetFoldingLevel(lineno)
+	let closure = { 'lineno' : a:lineno }
+
+	function closure.f() dict
+		execute self.lineno
+
+		if vimclojure#SynIdName() =~ 'clojureParen\d' && vimclojure#Yank('l', 'normal "lyl') == '('
+			return 1
+		endif
+
+		if searchpairpos('(', '', ')', 'bWr', 'vimclojure#SynIdName() !~ "clojureParen\\d"') != [0, 0]
+			return 1
+		endif
+
+		return 0
+	endfunction
+
+	return vimclojure#WithSavedPosition(closure)
+endfunction
+
+" Disabled for now. Too slow (and naive).
+if exists("g:clj_want_folding") && g:clj_want_folding == 1 && 0 == 1
+	setlocal foldexpr=ClojureGetFoldingLevel(v:lnum)
+	setlocal foldmethod=expr
+endif
+
+if exists("g:clj_want_gorilla") && g:clj_want_gorilla == 1
+	call vimclojure#MakePlug("n", "DocLookupWord", 'vimclojure#DocLookup(expand("<cword>"))')
+	call vimclojure#MakePlug("n", "DocLookupInteractive", 'vimclojure#DocLookup(input("Symbol to look up: "))')
+	call vimclojure#MakePlug("n", "JavadocLookupWord", 'vimclojure#JavadocLookup(expand("<cword>"))')
+	call vimclojure#MakePlug("n", "JavadocLookupInteractive", 'vimclojure#JavadocLookup(input("Class to lookup: "))')
+	call vimclojure#MakePlug("n", "FindDoc", 'vimclojure#FindDoc())')
+
+	call vimclojure#MapPlug("n", "lw", "DocLookupWord")
+	call vimclojure#MapPlug("n", "li", "DocLookupInteractive")
+	call vimclojure#MapPlug("n", "jw", "JavadocLookupWord")
+	call vimclojure#MapPlug("n", "ji", "JavadocLookupInteractive")
+	call vimclojure#MapPlug("n", "fd", "FindDoc")
+
+	call vimclojure#MakePlug("n", "RequireFile", 'vimclojure#RequireFile()')
+	call vimclojure#MapPlug("n", "rf", "RequireFile")
+
+	call vimclojure#MakePlug("n", "MacroExpand",  'vimclojure#MacroExpand(0)')
+	call vimclojure#MakePlug("n", "MacroExpand1", 'vimclojure#MacroExpand(1)')
+
+	call vimclojure#MapPlug("n", "me", "MacroExpand")
+	call vimclojure#MapPlug("n", "m1", "MacroExpand1")
+
+	call vimclojure#MakePlug("n", "EvalFile",      'vimclojure#EvalFile()')
+	call vimclojure#MakePlug("n", "EvalLine",      'vimclojure#EvalLine()')
+	call vimclojure#MakePlug("v", "EvalBlock",     'vimclojure#EvalBlock()')
+	call vimclojure#MakePlug("n", "EvalToplevel",  'vimclojure#EvalToplevel()')
+	call vimclojure#MakePlug("n", "EvalParagraph", 'vimclojure#EvalParagraph()')
+
+	call vimclojure#MapPlug("n", "ef", "EvalFile")
+	call vimclojure#MapPlug("n", "el", "EvalLine")
+	call vimclojure#MapPlug("v", "eb", "EvalBlock")
+	call vimclojure#MapPlug("n", "et", "EvalToplevel")
+	call vimclojure#MapPlug("n", "ep", "EvalParagraph")
+
+	call vimclojure#MakePlug("n", "StartRepl", 'vimclojure#Repl.New()')
+	call vimclojure#MapPlug("n", "sr", "StartRepl")
+
+	inoremap <Plug>ClojureReplEnterHook <Esc>:call b:vimclojure_repl.enterHook()<CR>
+	inoremap <Plug>ClojureReplUpHistory <C-O>:call b:vimclojure_repl.upHistory()<CR>
+	inoremap <Plug>ClojureReplDownHistory <C-O>:call b:vimclojure_repl.downHistory()<CR>
+
+	nnoremap <Plug>ClojureClosePreview :pclose!<CR>
+	call vimclojure#MapPlug("n", "p", "ClosePreview")
+
+	setlocal omnifunc=vimclojure#OmniCompletion
+
+	" Get the namespace of the buffer.
+	let s:content = getbufline(bufnr("%"), 1, line("$"))
+	let b:vimclojure_namespace = vimclojure#ExecuteNailWithInput("NamespaceOfFile", s:content)
+	unlet s:content
+endif
+
 let &cpo = s:cpo_save

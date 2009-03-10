@@ -8,14 +8,17 @@ insert-child
 insert-left
 insert-right
 left
+leftmost
 lefts
 make-node
 next
 node
 path
+prev
 remove
 replace
 right
+rightmost
 rights
 root
 seq-zip

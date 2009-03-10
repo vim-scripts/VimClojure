@@ -58,14 +58,15 @@ if exists("g:clj_highlight_builtins") && g:clj_highlight_builtins != 0
 				\            . "*allow-unresolved-args* *compile-files* "
 				\            . "*compile-path* *file* *flush-on-newline* "
 				\            . "*macro-meta* *math-context* *print-dup* "
-				\            . "*print-level* *use-context-classloader* ",
+				\            . "*print-level* *use-context-classloader* "
+				\            . "*source-path*",
 				\ "Define":    "def- defn defn- defmacro defmulti defmethod "
 				\            . "defstruct defonce declare definline ",
 				\ "Macro":     "and or -> assert with-out-str with-in-str with-open "
 				\            . "locking destructure ns dosync binding delay "
 				\            . "lazy-cons lazy-cat time assert doc with-precision "
 				\            . "with-local-vars .. doto memfn proxy amap areduce "
-				\            . "refer-clojure ",
+				\            . "refer-clojure future lazy-seq letfn",
 				\ "Func":      "= not= not nil? false? true? complement identical? "
 				\            . "string? symbol? map? seq? vector? keyword? var? "
 				\            . "special-symbol? apply partial comp constantly "
@@ -81,12 +82,12 @@ if exists("g:clj_highlight_builtins") && g:clj_highlight_builtins != 0
 				\            . "float? integer? number? ratio? rational? "
 				\            . "bit-and bit-or bit-xor bit-not bit-shift-left "
 				\            . "bit-shift-right symbol keyword gensym count conj seq "
-				\            . "first rest ffirst frest rfirst rrest second every? "
+				\            . "first rest ffirst fnext nfirst nnext second every? "
 				\            . "not-every? some not-any? concat reverse cycle "
 				\            . "interleave interpose split-at split-with take "
 				\            . "take-nth take-while drop drop-while repeat replicate "
-				\            . "iterate range into distinct sort sort-by zipmap fnseq "
-				\            . "line-seq butlast last nth nthrest "
+				\            . "iterate range into distinct sort sort-by zipmap "
+				\            . "line-seq butlast last nth nthnext next "
 				\            . "repeatedly tree-seq enumeration-seq iterator-seq "
 				\            . "coll? associative? empty? list? reversible? "
 				\            . "sequential? sorted? list list* cons peek pop vec "
@@ -111,7 +112,7 @@ if exists("g:clj_highlight_builtins") && g:clj_highlight_builtins != 0
 				\            . "update-proxy hash-set sorted-set set disj set? "
 				\            . "aclone add-watch alias alter-var-root "
 				\            . "ancestors await1 bases bigdec bigint bit-and-not "
-				\            . "bit-clear bit-flip bit-set bit-test cache-seq "
+				\            . "bit-clear bit-flip bit-set bit-test counted?"
 				\            . "char-escape-string char-name-string class? "
 				\            . "compare compile construct-proxy delay? "
 				\            . "derive descendants distinct? double-array "
@@ -124,7 +125,7 @@ if exists("g:clj_highlight_builtins") && g:clj_highlight_builtins != 0
 				\            . "print-special-doc proxy-call-with-super "
 				\            . "proxy-super rationalize read-string remove "
 				\            . "remove-watch replace resultset-seq rsubseq "
-				\            . "seque set-validator shutdown-agents subseq "
+				\            . "seque set-validator! shutdown-agents subseq "
 				\            . "special-form-anchor syntax-symbol-anchor supers "
 				\            . "unchecked-add unchecked-dec unchecked-divide "
 				\            . "unchecked-inc unchecked-multiply unchecked-negate "
@@ -132,7 +133,11 @@ if exists("g:clj_highlight_builtins") && g:clj_highlight_builtins != 0
 				\            . "atom compare-and-set! ifn? gen-interface "
 				\            . "intern init-proxy io! memoize proxy-name swap! "
 				\            . "release-pending-sends the-ns unquote while "
-				\            . "unchecked-remainder"
+				\            . "unchecked-remainder add-watcher alter-meta! "
+				\            . "future-call methods mod pcalls prefers pvalues "
+				\            . "print-namespace-doc remove-watcher reset! "
+				\            . "reset-meta! type vary-meta unquote-splicing "
+				\            . "sequence"
 				\ }
 
 	for k in keys(builtins_map)
@@ -153,7 +158,8 @@ if exists("g:clj_highlight_builtins") && g:clj_highlight_builtins != 0
 				\ "Func": "append-child branch? children up down edit end? "
 				\       . "insert-child insert-left insert-right left lefts "
 				\       . "right rights make-node next node path remove "
-				\       . "replace root seq-zip vector-zip xml-zip zipper"
+				\       . "replace root seq-zip vector-zip xml-zip zipper "
+				\       . "prev leftmost rightmost"
 				\ })
 endif
 
