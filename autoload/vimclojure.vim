@@ -62,48 +62,6 @@ function! vimclojure#AddCompletions(ns)
 	endif
 endfunction
 
-function! vimclojure#CheckUsage() dict
-	while search('^.*\M' . self.ns . '\m.*$', "W") != 0
-		let line = getline(".")
-		let mod = substitute(line, self.mod, '\1', '')
-
-		if line != mod
-			return mod
-		endif
-
-		let l = search('^\s*(\(:use\|:require\)', 'Wnb')
-		if l == 0
-			return 0
-		endif
-
-		if getline(l) =~ self.lookfor
-			return 1
-		endif
-	endwhile
-endfunction
-
-function! vimclojure#IsRequired(ns)
-	let closure = {
-				\ 'f': function("vimclojure#CheckUsage"),
-				\ 'ns': a:ns,
-				\ 'lookfor': ':require',
-				\ 'mod':
-				\ '^.*\[\M' . a:ns . '\m\s\+:as\s\+\([a-zA-Z0-9.-]\+\)\].*$'
-				\ }
-	return vimclojure#WithSavedPosition(closure)
-endfunction
-
-function! vimclojure#IsUsed(ns)
-	let closure = {
-				\ 'f': function("vimclojure#CheckUsage"),
-				\ 'ns': a:ns,
-				\ 'lookfor': ':use',
-				\ 'mod':
-				\ '^.*\[\M' . a:ns . '\m\s\+:only\s\+(\([ a-zA-Z0-9-]\+\))\].*$',
-				\ }
-	return vimclojure#WithSavedPosition(closure)
-endfunction
-
 " Nailgun part:
 function! vimclojure#ExtractSexpr(toplevel)
 	let closure = { "flag" : (a:toplevel ? "r" : "") }
@@ -184,7 +142,9 @@ function! vimclojure#PreviewWindow.New() dict
 	setlocal buftype=nofile
 	setlocal bufhidden=wipe
 
-	call append(0, "; Use \\p to close this buffer!")
+	let leader = exists("g:maplocalleader") ? g:maplocalleader : "\\"
+
+	call append(0, "; Use " . leader . "p to close this buffer!")
 
 	return copy(self)
 endfunction
@@ -202,10 +162,6 @@ if !exists("vimclojure#NailgunClient")
 	let vimclojure#NailgunClient = "ng"
 endif
 
-augroup VimClojure
-	autocmd CursorMovedI *.clj if pumvisible() == 0 | pclose | endif
-augroup END
-
 function! vimclojure#ExecuteNailWithInput(nail, input, ...)
 	if type(a:input) == type("")
 		let input = split(a:input, '\n', 1)
@@ -215,11 +171,7 @@ function! vimclojure#ExecuteNailWithInput(nail, input, ...)
 
 	let inputfile = tempname()
 	try
-		new
-		call append(1, input)
-		1 delete
-		silent execute "write " . inputfile
-		bdelete
+		call writefile(input, inputfile)
 
 		let cmdline = [g:vimclojure#NailgunClient,
 					\ "de.kotka.vimclojure.nails." . a:nail]
@@ -229,7 +181,8 @@ function! vimclojure#ExecuteNailWithInput(nail, input, ...)
 		let result = system(cmd)
 
 		if v:shell_error
-			throw "Couldn't execute Nail! " . cmd
+			echoerr "Couldn't execute Nail! "
+						\ . substitute(result, '\n\(\t\?\)', ' ', 'g')
 		endif
 	finally
 		call delete(inputfile)
@@ -321,6 +274,42 @@ function! vimclojure#JavadocLookup(word)
 	call system(join([g:vimclojure#Browser, url], " "))
 endfunction
 
+function! vimclojure#MetaLookup(word)
+	let docs = vimclojure#ExecuteNailWithInput("MetaLookup", a:word,
+				\ "-n", b:vimclojure_namespace)
+	let resultBuffer = g:vimclojure#PreviewWindow.New()
+	call resultBuffer.showText(docs)
+	setfiletype clojure
+	wincmd p
+endfunction
+
+function! vimclojure#SourceLookup(word)
+	let source = vimclojure#ExecuteNailWithInput("SourceLookup", a:word,
+				\ "-n", b:vimclojure_namespace)
+	let resultBuffer = g:vimclojure#PreviewWindow.New()
+	call resultBuffer.showText(source)
+	setfiletype clojure
+	wincmd p
+endfunction
+
+function! vimclojure#GotoSource(word)
+	let result = vimclojure#ExecuteNailWithInput("SourceLocation", a:word,
+				\ "-n", b:vimclojure_namespace)
+	execute "let pos = " . result
+
+	if !filereadable(pos.file)
+		let file = findfile(pos.file)
+		if file == ""
+			echoerr pos.file . " not found in 'path'"
+			return
+		endif
+		let pos.file = file
+	endif
+
+	execute "edit " . pos.file
+	execute pos.line
+endfunction
+
 " Evaluators
 function! vimclojure#MacroExpand(firstOnly)
 	let sexp = vimclojure#ExtractSexpr(0)
@@ -335,19 +324,22 @@ function! vimclojure#MacroExpand(firstOnly)
 
 	let result = call(function("vimclojure#ExecuteNailWithInput"), cmd)
 	call resultBuffer.showText(result)
+	setfiletype clojure
 
 	wincmd p
 endfunction
 
-function! vimclojure#RequireFile()
+function! vimclojure#RequireFile(all)
 	let ns = b:vimclojure_namespace
+	let all = a:all ? "-all" : ""
 
 	let resultBuffer = g:vimclojure#PreviewWindow.New()
 
-	let require = "(require :reload-all :verbose '". ns. ")"
+	let require = "(require :reload" . all . " :verbose '". ns. ")"
 	let result = vimclojure#ExecuteNailWithInput("Repl", require, "-r")
 
 	call resultBuffer.showText(result)
+	setfiletype clojure
 
 	wincmd p
 endfunction
@@ -362,13 +354,14 @@ function! vimclojure#EvalFile()
 
 	let resultBuffer = g:vimclojure#PreviewWindow.New()
 	call resultBuffer.showText(result)
+	setfiletype clojure
 
 	wincmd p
 endfunction
 
 function! vimclojure#EvalLine()
 	let theLine = line(".")
-	let content = getline(theLine)
+	let content = getline(theLine) - 1
 	let file = vimclojure#BufferName()
 	let ns = b:vimclojure_namespace
 
@@ -377,6 +370,7 @@ function! vimclojure#EvalLine()
 
 	let resultBuffer = g:vimclojure#PreviewWindow.New()
 	call resultBuffer.showText(result)
+	setfiletype clojure
 
 	wincmd p
 endfunction
@@ -387,10 +381,11 @@ function! vimclojure#EvalBlock() range
 
 	let content = getbufline(bufnr("%"), a:firstline, a:lastline)
 	let result = vimclojure#ExecuteNailWithInput("Repl", content,
-				\ "-r", "-n", ns, "-f", file, "-l", a:firstline)
+				\ "-r", "-n", ns, "-f", file, "-l", a:firstline - 1)
 
 	let resultBuffer = g:vimclojure#PreviewWindow.New()
 	call resultBuffer.showText(result)
+	setfiletype clojure
 
 	wincmd p
 endfunction
@@ -399,24 +394,20 @@ function! vimclojure#EvalToplevel()
 	let file = vimclojure#BufferName()
 	let ns = b:vimclojure_namespace
 
-	let startPosition = searchpairpos('(', '', ')', 'bWnr',
-				\ 'vimclojure#SynIdName() !~ "clojureParen\\d"')
-	if startPosition == [0, 0]
-		throw "Not in a toplevel expression"
+	let pos = searchpairpos('(', '', ')', 'bWnr',
+					\ 'vimclojure#SynIdName() !~ "clojureParen\\d"')
+
+	if pos == [0, 0]
+		throw "Error: Not in toplevel expression!"
 	endif
 
-	let endPosition = searchpairpos('(', '', ')', 'Wnr',
-				\ 'vimclojure#SynIdName() !~ "clojureParen\\d"')
-	if endPosition == [0, 0]
-		throw "Toplevel expression not terminated"
-	endif
-
-	let expr = getbufline(bufnr("%"), startPosition[0], endPosition[0])
+	let expr = vimclojure#ExtractSexpr(1)
 	let result = vimclojure#ExecuteNailWithInput("Repl", expr,
-				\ "-r", "-n", ns, "-f", file, "-l", startPosition[0])
+				\ "-r", "-n", ns, "-f", file, "-l", pos[0] - 1)
 
 	let resultBuffer = g:vimclojure#PreviewWindow.New()
 	call resultBuffer.showText(result)
+	setfiletype clojure
 
 	wincmd p
 endfunction
@@ -437,10 +428,11 @@ function! vimclojure#EvalParagraph()
 
 	let content = getbufline(bufnr("%"), startPosition, endPosition)
 	let result = vimclojure#ExecuteNailWithInput("Repl", content,
-				\ "-r", "-n", ns, "-f", file, "-l", startPosition)
+				\ "-r", "-n", ns, "-f", file, "-l", startPosition - 1)
 
 	let resultBuffer = g:vimclojure#PreviewWindow.New()
 	call resultBuffer.showText(result)
+	setfiletype clojure
 
 	wincmd p
 endfunction
@@ -451,7 +443,7 @@ let vimclojure#Repl = copy(vimclojure#Buffer)
 let vimclojure#Repl._prompt = "Clojure=>"
 let vimclojure#Repl._history = []
 let vimclojure#Repl._historyDepth = 0
-let vimclojure#Repl._replCommands = [ ",close" ]
+let vimclojure#Repl._replCommands = [ ",close", ",st", ",ct" ]
 
 function! vimclojure#Repl.New() dict
 	let instance = copy(self)
@@ -473,6 +465,9 @@ function! vimclojure#Repl.New() dict
 	call append(line("$"), ["Clojure", self._prompt . " "])
 
 	let instance._id = vimclojure#ExecuteNail("Repl", "-s")
+	call vimclojure#ExecuteNailWithInput("Repl",
+				\ "(require 'clojure.contrib.stacktrace)", "-r",
+				\ "-i", instance._id)
 	let instance._buffer = bufnr("%")
 
 	let b:vimclojure_repl = instance
@@ -497,6 +492,22 @@ function! vimclojure#Repl.doReplCommand(cmd) dict
 		call vimclojure#ExecuteNail("Repl", "-S", "-i", self._id)
 		call self.close()
 		stopinsert
+	elseif a:cmd == ",st"
+		let result = vimclojure#ExecuteNailWithInput("Repl",
+					\ "(clojure.contrib.stacktrace/print-stack-trace *e)", "-r",
+					\ "-i", self._id)
+		call self.showText(result)
+		call self.showText(self._prompt . " ")
+		normal G
+		startinsert!
+	elseif a:cmd == ",ct"
+		let result = vimclojure#ExecuteNailWithInput("Repl",
+					\ "(clojure.contrib.stacktrace/print-cause-trace *e)", "-r",
+					\ "-i", self._id)
+		call self.showText(result)
+		call self.showText(self._prompt . " ")
+		normal G
+		startinsert!
 	endif
 endfunction
 
@@ -584,22 +595,60 @@ function! vimclojure#Repl.deleteLast() dict
 	normal dd
 endfunction
 
+" Highlighting
+function! vimclojure#ColorNamespace(highlights)
+	for [category, words] in items(a:highlights)
+		if words != []
+			execute "syntax keyword clojure" . category . " " . join(words, " ")
+		endif
+	endfor
+endfunction
+
 " Omni Completion
 function! vimclojure#OmniCompletion(findstart, base)
 	if a:findstart == 1
-		let closure = {}
+		let line = getline(".")
+		let start = col(".") - 1
 
-		function! closure.f() dict
-			normal b
-			return col(".") - 1
-		endfunction
+		while start > 0 && line[start - 1] =~ '\w\|-\|\.\|+\|*\|/'
+			let start -= 1
+		endwhile
 
-		return vimclojure#WithSavedPosition(closure)
+		return start
 	else
-		let completions = vimclojure#ExecuteNailWithInput("Complete", a:base,
-					\ "-n", b:vimclojure_namespace)
+		let slash = stridx(a:base, '/')
+		if slash > -1
+			let prefix = strpart(a:base, 0, slash)
+			let base = strpart(a:base, slash + 1)
+		else
+			let prefix = ""
+			let base = a:base
+		endif
+
+		let completions = vimclojure#ExecuteNail("Complete",
+					\ "-n", b:vimclojure_namespace,
+					\ "-p", prefix, "-b", base)
 		execute "let result = " . completions
 		return result
+	endif
+endfunction
+
+function! vimclojure#InitBuffer()
+	if exists("g:clj_want_gorilla") && g:clj_want_gorilla == 1
+		if !exists("b:vimclojure_namespace")
+			" Get the namespace of the buffer.
+			if &previewwindow
+				let b:vimclojure_namespace = "user"
+			else
+				try
+					let content = getbufline(bufnr("%"), 1, line("$"))
+					let b:vimclojure_namespace =
+								\ vimclojure#ExecuteNailWithInput(
+								\   "NamespaceOfFile", content)
+				catch /.*/
+				endtry
+			endif
+		endif
 	endif
 endfunction
 

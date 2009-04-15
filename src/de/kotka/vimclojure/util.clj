@@ -20,7 +20,9 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
 
-(clojure.core/ns de.kotka.vimclojure.util)
+(clojure.core/ns de.kotka.vimclojure.util
+  (:require
+     [clojure.contrib.pprint :as pprint]))
 
 ; Common helpers
 (defn str-cut
@@ -220,26 +222,54 @@
 
 (defmethod clj->vim clojure.lang.Named
   [thing]
-  (str-wrap (name thing) \"))
+  (if-let [prefix (namespace thing)]
+    (str-wrap (str prefix "/" (name thing)) \")
+    (str-wrap (name thing) \")))
 
 (defmethod clj->vim Number
   [thing]
   (str thing))
 
+(defn safe-var-get
+  [the-var]
+  (when (.isBound the-var)
+    (var-get the-var)))
+
+(defn decide-completion-in
+  [nspace prefix base]
+  (let [nom (name prefix)]
+    (if (pos? (count nom))
+      (cond
+        (or (contains? (set (map ns-name (all-ns))) prefix)
+            (contains? (ns-aliases nspace) prefix))
+        [:local-var]
+
+        (or (Character/isUpperCase (char (first nom)))
+            (try
+              (instance? Class (ns-resolve nspace prefix))
+              (catch ClassNotFoundException _ false)))
+        [:static-field]
+
+        :else (throw (Exception. "Cannot determine type of prefix")))
+      (cond
+        (Character/isUpperCase (char (first base))) [:import]
+        (< -1 (.indexOf base (int \.)))             [:namespace]
+        :else [:full-var :alias :namespace]))))
+
 (defn- type-of-completion
   [thing]
   (cond
-    (instance? clojure.lang.Namespace thing) "n"
+    (instance? clojure.lang.Namespace thing)   "n"
+    (instance? java.lang.reflect.Field thing)  "S"
+    (instance? java.lang.reflect.Method thing) "M"
     (class? thing)        "c"
+    (coll? thing)         (recur (first thing))
     (:macro (meta thing)) "m"
-    :else                 (try
-                            (let [value (var-get thing)]
-                              (cond
-                                (instance? clojure.lang.MultiFn value) "f"
-                                (fn? value) "f"
-                                :else       "v"))
-                            (catch IllegalStateException _
-                              "v"))))
+    :else                 (let [value (safe-var-get thing)]
+                            (cond
+                              (instance? clojure.lang.MultiFn value) "f"
+                              (fn? value) "f"
+                              :else       "v"))))
 
 (defmulti make-completion-item
   "Create a completion item for Vim's popup-menu."
@@ -263,13 +293,31 @@
             "info" ""))
 
 (defmethod make-completion-item "M"
-  [the-name the-method]
-  (let [rtype    (-> the-method .getReturnType .getSimpleName str)
-        arglist  (.getParameterTypes the-method)
-        menu     (str-cat (concat arglist [rtype]) " -> ")
-        info     (str the-name " :: " menu)]
+  [the-name the-methods]
+  (let [nam      (name (read-string the-name))
+        rtypes   (map #(-> % .getReturnType .getSimpleName) the-methods)
+        arglists (map (fn [m]
+                        (let [types (.getParameterTypes m)]
+                          (vec (map #(.getSimpleName %) types))))
+                      the-methods)
+        info     (apply str "  " the-name \newline \newline
+                        (map #(str "  " %1 " " nam
+                                   (str-wrap (str-cat %2 ", ") \( \))
+                                   \; \newline)
+                             rtypes arglists))]
     (hash-map "word" the-name
               "kind" "M"
+              "menu" (print-str arglists)
+              "info" info)))
+
+(defmethod make-completion-item "S"
+  [the-name [the-field]]
+  (let [nam  (name (read-string the-name))
+        menu (-> the-field .getType .getSimpleName)
+        info (str "  " the-name \newline \newline
+                  "  " menu " " the-name \newline)]
+    (hash-map "word" the-name
+              "kind" "S"
               "menu" menu
               "info" info)))
 
@@ -329,3 +377,17 @@
   (let [eof (Object.)
         rdr (fn [] (read stream false eof))]
     (take-while #(not= % eof) (repeatedly rdr))))
+
+; Pretty printing.
+(defn pretty-print
+  "Print the given form in a pretty way. If Tom Faulhaber's pretty printer is
+  not installed simply defaults prn."
+  [form]
+  (pprint/pprint form))
+
+(defn pretty-print-code
+  "Print the given form in a pretty way. If Tom Faulhaber's pretty printer is
+  not installed simply defaults prn. Uses the *code-dispatch* formatting."
+  [form]
+  (pprint/with-pprint-dispatch pprint/*code-dispatch*
+    (pprint/pprint form)))

@@ -1,0 +1,9 @@
+<ivysettings>
+
+    <!-- Load the standard Ivy settings. Which just extend them for Clojure. -->
+    <include url="${ivy.default.settings.dir}/ivysettings.xml"/>
+
+    <!-- Include the Kotka ivyrep for Clojure and Contrib -->
+    <include url="http://kotka.de/ivy/ivysettings.xml"/>
+
+</ivysettings>

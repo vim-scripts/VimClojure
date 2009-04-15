@@ -23,7 +23,7 @@
 (clojure.core/ns de.kotka.vimclojure.repl
   (:use
      [clojure.contrib.def :only (defvar)]
-     [de.kotka.vimclojure.util :only (stream->seq)])
+     [de.kotka.vimclojure.util :only (stream->seq pretty-print)])
   (:import
      (clojure.lang Var Compiler LineNumberingPushbackReader)))
 
@@ -36,6 +36,10 @@
     "Get a new Repl id."
     []
     (dosync (alter id inc))))
+
+(defvar *print-pretty*
+  false
+  "Set to true in the Repl if you wanted pretty printed results.")
 
 (defstruct
   #^{:doc
@@ -63,6 +67,7 @@
               :expr2              nil
               :expr3              nil
               :exception          nil
+              :print-pretty       de.kotka.vimclojure.repl/*print-pretty*
               :line               0))
 
 (defn start
@@ -96,7 +101,7 @@
   everything, but allows to specify an offset as initial line."
   [reader offset]
   (proxy [LineNumberingPushbackReader] [reader]
-    (getLineNumber []  (+ offset (proxy-super getLineNumber)))))
+    (getLineNumber [] (+ offset (proxy-super getLineNumber)))))
 
 (defn with-repl*
   "Calls thunk in the context of the Repl with the given id. id may be -1
@@ -116,8 +121,9 @@
                    line)]
     (try
       (Var/pushThreadBindings
-        {Compiler/SOURCE        file
-         Compiler/LINE          line
+        {Compiler/LINE          line
+         Compiler/SOURCE        (.getName (java.io.File. file))
+         Compiler/SOURCE_PATH   file
          #'*in*                 (make-reader *in* line)
          #'*ns*                 (if nspace nspace (the-repl :ns))
          #'*warn-on-reflection* (the-repl :warn-on-reflection)
@@ -129,7 +135,8 @@
          #'*1                   (the-repl :expr1)
          #'*2                   (the-repl :expr2)
          #'*3                   (the-repl :expr3)
-         #'*e                   (the-repl :exception)})
+         #'*e                   (the-repl :exception)
+         #'de.kotka.vimclojure.repl/*print-pretty* (the-repl :print-pretty)})
       (thunk)
       (finally
         (when (not= id -1)
@@ -148,6 +155,7 @@
                                  :expr2              *2
                                  :expr3              *3
                                  :exception          *e
+                                 :print-pretty       de.kotka.vimclojure.repl/*print-pretty*
                                  :line               (dec (.getLineNumber *in*))))))
         (Var/popThreadBindings)))))
 
@@ -166,7 +174,7 @@
     (try
       (doseq [form (stream->seq *in*)]
         (let [result (eval form)]
-          (prn result)
+          ((if de.kotka.vimclojure.repl/*print-pretty* pretty-print prn) result)
           (set! *3 *2)
           (set! *2 *1)
           (set! *1 result)))

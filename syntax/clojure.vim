@@ -10,175 +10,126 @@ elseif exists("b:current_syntax")
     finish
 endif
 
-function! s:ColorNamespace(ns, keywords)
-	let used = vimclojure#IsUsed(a:ns)
-	let as = vimclojure#IsRequired(a:ns)
-
-	if type(used) == type(0) && used == 0
-		if type(as) == type(0) && as == 0
-			return
-		endif
-	endif
-
-	for k in keys(a:keywords)
-		let kws = split(a:keywords[k])
-
-		if type(as) == type("")
-			let akws = map(copy(kws), 'as . "/" . v:val')
-			execute "syntax keyword clojure" . k . " " . join(akws, " ")
-		endif
-
-		if type(used) == type(1) && used == 1
-			execute "syntax keyword clojure" . k . " " . join(kws, " ")
-		elseif type(used) == type("")
-			execute "syntax keyword clojure" . k . " " . used
-		endif
-
-		call map(kws, 'a:ns . "/" . v:val')
-		execute "syntax keyword clojure" . k . " " . join(kws, " ")
-	endfor
-endfunction
-
 " Highlight superfluous closing parens, brackets and braces.
 syn match clojureError "]\|}\|)"
 
-if exists("g:clj_highlight_builtins") && g:clj_highlight_builtins != 0
-	let builtins_map = {
-				\ "Constant":  "nil",
-				\ "Boolean":   "true false",
-				\ "Cond":      "if if-not if-let when when-not when-let "
-				\            . "when-first cond condp",
-				\ "Exception": "try catch finally throw",
-				\ "Repeat":    "recur map mapcat reduce filter for doseq dorun "
-				\            . "doall dotimes",
-				\ "Special":   ". def do fn if let new quote var loop",
-				\ "Variable":  "*warn-on-reflection* this "
-				\            . "*agent* *ns* *in* *out* *err* *command-line-args* "
-				\            . "*print-meta* *print-readably* *print-length* "
-				\            . "*allow-unresolved-args* *compile-files* "
-				\            . "*compile-path* *file* *flush-on-newline* "
-				\            . "*macro-meta* *math-context* *print-dup* "
-				\            . "*print-level* *use-context-classloader* "
-				\            . "*source-path*",
-				\ "Define":    "def- defn defn- defmacro defmulti defmethod "
-				\            . "defstruct defonce declare definline ",
-				\ "Macro":     "and or -> assert with-out-str with-in-str with-open "
-				\            . "locking destructure ns dosync binding delay "
-				\            . "lazy-cons lazy-cat time assert doc with-precision "
-				\            . "with-local-vars .. doto memfn proxy amap areduce "
-				\            . "refer-clojure future lazy-seq letfn",
-				\ "Func":      "= not= not nil? false? true? complement identical? "
-				\            . "string? symbol? map? seq? vector? keyword? var? "
-				\            . "special-symbol? apply partial comp constantly "
-				\            . "identity comparator fn? re-matcher re-find re-matches "
-				\            . "re-groups re-seq re-pattern str pr prn print "
-				\            . "println pr-str prn-str print-str println-str newline "
-				\            . "macroexpand macroexpand-1 monitor-enter monitor-exit "
-				\            . "eval find-doc file-seq flush hash load load-file "
-				\            . "print-doc read read-line scan slurp subs sync test "
-				\            . "format printf loaded-libs use require load-reader "
-				\            . "load-string + - * / < <= == >= > dec inc min max neg? "
-				\            . "pos? quot rem zero? rand rand-int decimal? even? odd? "
-				\            . "float? integer? number? ratio? rational? "
-				\            . "bit-and bit-or bit-xor bit-not bit-shift-left "
-				\            . "bit-shift-right symbol keyword gensym count conj seq "
-				\            . "first rest ffirst fnext nfirst nnext second every? "
-				\            . "not-every? some not-any? concat reverse cycle "
-				\            . "interleave interpose split-at split-with take "
-				\            . "take-nth take-while drop drop-while repeat replicate "
-				\            . "iterate range into distinct sort sort-by zipmap "
-				\            . "line-seq butlast last nth nthnext next "
-				\            . "repeatedly tree-seq enumeration-seq iterator-seq "
-				\            . "coll? associative? empty? list? reversible? "
-				\            . "sequential? sorted? list list* cons peek pop vec "
-				\            . "vector peek pop rseq subvec array-map hash-map "
-				\            . "sorted-map sorted-map-by assoc assoc-in dissoc get "
-				\            . "get-in contains? find select-keys update-in key val "
-				\            . "keys vals merge merge-with max-key min-key "
-				\            . "create-struct struct-map struct accessor "
-				\            . "remove-method meta with-meta in-ns refer create-ns "
-				\            . "find-ns all-ns remove-ns import ns-name ns-map "
-				\            . "ns-interns ns-publics ns-imports ns-refers ns-resolve "
-				\            . "resolve ns-unmap name namespace require use "
-				\            . "set! find-var var-get var-set ref deref "
-				\            . "ensure alter ref-set commute agent send send-off "
-				\            . "agent-errors clear-agent-errors await await-for "
-				\            . "instance? bean alength aget aset aset-boolean "
-				\            . "aset-byte aset-char aset-double aset-float "
-				\            . "aset-int aset-long aset-short make-array "
-				\            . "to-array to-array-2d into-array int long float "
-				\            . "double char boolean short byte parse add-classpath "
-				\            . "cast class get-proxy-class proxy-mappings "
-				\            . "update-proxy hash-set sorted-set set disj set? "
-				\            . "aclone add-watch alias alter-var-root "
-				\            . "ancestors await1 bases bigdec bigint bit-and-not "
-				\            . "bit-clear bit-flip bit-set bit-test counted?"
-				\            . "char-escape-string char-name-string class? "
-				\            . "compare compile construct-proxy delay? "
-				\            . "derive descendants distinct? double-array "
-				\            . "doubles drop-last empty float-array floats "
-				\            . "force gen-class get-validator int-array ints "
-				\            . "isa? long-array longs make-hierarchy method-sig "
-				\            . "not-empty ns-aliases ns-unalias num partition "
-				\            . "parents pmap prefer-method primitives-classnames "
-				\            . "print-ctor print-dup print-method print-simple "
-				\            . "print-special-doc proxy-call-with-super "
-				\            . "proxy-super rationalize read-string remove "
-				\            . "remove-watch replace resultset-seq rsubseq "
-				\            . "seque set-validator! shutdown-agents subseq "
-				\            . "special-form-anchor syntax-symbol-anchor supers "
-				\            . "unchecked-add unchecked-dec unchecked-divide "
-				\            . "unchecked-inc unchecked-multiply unchecked-negate "
-				\            . "unchecked-subtract underive xml-seq trampoline "
-				\            . "atom compare-and-set! ifn? gen-interface "
-				\            . "intern init-proxy io! memoize proxy-name swap! "
-				\            . "release-pending-sends the-ns unquote while "
-				\            . "unchecked-remainder add-watcher alter-meta! "
-				\            . "future-call methods mod pcalls prefers pvalues "
-				\            . "print-namespace-doc remove-watcher reset! "
-				\            . "reset-meta! type vary-meta unquote-splicing "
-				\            . "sequence"
-				\ }
+if (exists("g:clj_highlight_builtins") && g:clj_highlight_builtins != 0)
+			\ || (exists("g:clj_want_gorilla") && g:clj_want_gorilla != 0)
+	" Special case for Windows.
+	call vimclojure#InitBuffer()
 
-	for k in keys(builtins_map)
-		let kws = split(builtins_map[k])
-		call map(kws, '"clojure.core/" . v:val')
+	let s:builtins_map = {
+		\ "Constant":  "nil",
+		\ "Boolean":   "true false",
+		\ "Cond":      "if if-not if-let when when-not when-let "
+		\            . "when-first cond condp",
+		\ "Exception": "try catch finally throw",
+		\ "Repeat":    "recur map mapcat reduce filter for doseq dorun "
+		\            . "doall dotimes",
+		\ "Special":   ". def do fn if let new quote var loop",
+		\ "Variable":  "*warn-on-reflection* this "
+		\            . "*agent* *ns* *in* *out* *err* *command-line-args* "
+		\            . "*print-meta* *print-readably* *print-length* "
+		\            . "*allow-unresolved-args* *compile-files* "
+		\            . "*compile-path* *file* *flush-on-newline* "
+		\            . "*macro-meta* *math-context* *print-dup* "
+		\            . "*print-level* *use-context-classloader* "
+		\            . "*source-path*",
+		\ "Define":    "def- defn defn- defmacro defmulti defmethod "
+		\            . "defstruct defonce declare definline ",
+		\ "Macro":     "and or -> assert with-out-str with-in-str with-open "
+		\            . "locking destructure ns dosync binding delay "
+		\            . "lazy-cons lazy-cat time assert doc with-precision "
+		\            . "with-local-vars .. doto memfn proxy amap areduce "
+		\            . "refer-clojure future lazy-seq letfn",
+		\ "Func":      "= not= not nil? false? true? complement identical? "
+		\            . "string? symbol? map? seq? vector? keyword? var? "
+		\            . "special-symbol? apply partial comp constantly "
+		\            . "identity comparator fn? re-matcher re-find re-matches "
+		\            . "re-groups re-seq re-pattern str pr prn print "
+		\            . "println pr-str prn-str print-str println-str newline "
+		\            . "macroexpand macroexpand-1 monitor-enter monitor-exit "
+		\            . "eval find-doc file-seq flush hash load load-file "
+		\            . "print-doc read read-line scan slurp subs sync test "
+		\            . "format printf loaded-libs use require load-reader "
+		\            . "load-string + - * / < <= == >= > dec inc min max neg? "
+		\            . "pos? quot rem zero? rand rand-int decimal? even? odd? "
+		\            . "float? integer? number? ratio? rational? "
+		\            . "bit-and bit-or bit-xor bit-not bit-shift-left "
+		\            . "bit-shift-right symbol keyword gensym count conj seq "
+		\            . "first rest ffirst fnext nfirst nnext second every? "
+		\            . "not-every? some not-any? concat reverse cycle "
+		\            . "interleave interpose split-at split-with take "
+		\            . "take-nth take-while drop drop-while repeat replicate "
+		\            . "iterate range into distinct sort sort-by zipmap "
+		\            . "line-seq butlast last nth nthnext next "
+		\            . "repeatedly tree-seq enumeration-seq iterator-seq "
+		\            . "coll? associative? empty? list? reversible? "
+		\            . "sequential? sorted? list list* cons peek pop vec "
+		\            . "vector peek pop rseq subvec array-map hash-map "
+		\            . "sorted-map sorted-map-by assoc assoc-in dissoc get "
+		\            . "get-in contains? find select-keys update-in key val "
+		\            . "keys vals merge merge-with max-key min-key "
+		\            . "create-struct struct-map struct accessor "
+		\            . "remove-method meta with-meta in-ns refer create-ns "
+		\            . "find-ns all-ns remove-ns import ns-name ns-map "
+		\            . "ns-interns ns-publics ns-imports ns-refers ns-resolve "
+		\            . "resolve ns-unmap name namespace require use "
+		\            . "set! find-var var-get var-set ref deref "
+		\            . "ensure alter ref-set commute agent send send-off "
+		\            . "agent-errors clear-agent-errors await await-for "
+		\            . "instance? bean alength aget aset aset-boolean "
+		\            . "aset-byte aset-char aset-double aset-float "
+		\            . "aset-int aset-long aset-short make-array "
+		\            . "to-array to-array-2d into-array int long float "
+		\            . "double char boolean short byte parse add-classpath "
+		\            . "cast class get-proxy-class proxy-mappings "
+		\            . "update-proxy hash-set sorted-set set disj set? "
+		\            . "aclone add-watch alias alter-var-root "
+		\            . "ancestors await1 bases bigdec bigint bit-and-not "
+		\            . "bit-clear bit-flip bit-set bit-test counted?"
+		\            . "char-escape-string char-name-string class? "
+		\            . "compare compile construct-proxy delay? "
+		\            . "derive descendants distinct? double-array "
+		\            . "doubles drop-last empty float-array floats "
+		\            . "force gen-class get-validator int-array ints "
+		\            . "isa? long-array longs make-hierarchy method-sig "
+		\            . "not-empty ns-aliases ns-unalias num partition "
+		\            . "parents pmap prefer-method primitives-classnames "
+		\            . "print-ctor print-dup print-method print-simple "
+		\            . "print-special-doc proxy-call-with-super "
+		\            . "proxy-super rationalize read-string remove "
+		\            . "remove-watch replace resultset-seq rsubseq "
+		\            . "seque set-validator! shutdown-agents subseq "
+		\            . "special-form-anchor syntax-symbol-anchor supers "
+		\            . "unchecked-add unchecked-dec unchecked-divide "
+		\            . "unchecked-inc unchecked-multiply unchecked-negate "
+		\            . "unchecked-subtract underive xml-seq trampoline "
+		\            . "atom compare-and-set! ifn? gen-interface "
+		\            . "intern init-proxy io! memoize proxy-name swap! "
+		\            . "release-pending-sends the-ns unquote while "
+		\            . "unchecked-remainder add-watcher alter-meta! "
+		\            . "future-call methods mod pcalls prefers pvalues "
+		\            . "print-namespace-doc remove-watcher reset! "
+		\            . "reset-meta! type vary-meta unquote-splicing "
+		\            . "sequence"
+		\ }
 
-		execute "syn keyword clojure" . k . " " . builtins_map[k]
-		execute "syn keyword clojure" . k . " " . join(kws)
+	for category in keys(s:builtins_map)
+		let words = split(s:builtins_map[category], " ")
+		let words = map(copy(words), '"clojure.core/" . v:val') + words
+		let s:builtins_map[category] = words
 	endfor
 
-	call s:ColorNamespace("clojure.core.set", {
-				\ "Func": "union difference intersection select index rename "
-				\       . "join map-invert project rename-keys"
-				\ })
-
-	" Zip
-	call s:ColorNamespace("clojure.core.zip", {
-				\ "Func": "append-child branch? children up down edit end? "
-				\       . "insert-child insert-left insert-right left lefts "
-				\       . "right rights make-node next node path remove "
-				\       . "replace root seq-zip vector-zip xml-zip zipper "
-				\       . "prev leftmost rightmost"
-				\ })
+	call vimclojure#ColorNamespace(s:builtins_map)
 endif
 
-if exists("g:clj_highlight_contrib") && g:clj_highlight_contrib != 0
-	" Def
-	call s:ColorNamespace("clojure.contrib.def", {
-				\ "Define": "defvar defvar- defunbound defunbound- defmacro- "
-				\         . "defstruct- defalias"
-				\ })
-
-	" Fcase
-	call s:ColorNamespace("clojure.contrib.fcase", {
-				\ "Func": "fcase case re-case instance-case in-case"
-				\ })
-
-	" Duck Streams
-	call s:ColorNamespace("clojure.contrib.duck-streams", {
-				\ "Func": "reader writer write-lines spit"
-				\ })
+if exists("b:vimclojure_namespace")
+	let s:result = vimclojure#ExecuteNailWithInput("DynamicHighlighting",
+				\ b:vimclojure_namespace)
+	execute "let s:highlights = " . s:result
+	call vimclojure#ColorNamespace(s:highlights)
+	unlet s:result s:highlights
 endif
 
 syn cluster clojureAtomCluster   contains=clojureError,clojureFunc,clojureMacro,clojureCond,clojureDefine,clojureRepeat,clojureException,clojureConstant,clojureVariable,clojureSpecial,clojureKeyword,clojureString,clojureCharacter,clojureNumber,clojureRational,clojureFloat,clojureBoolean,clojureQuote,clojureUnquote,clojureDispatch,clojurePattern

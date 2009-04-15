@@ -22,7 +22,11 @@
 
 (clojure.core/ns de.kotka.vimclojure.backend
   (:require
-     [de.kotka.vimclojure.util :as util]))
+     [de.kotka.vimclojure.util :as util])
+  (:import
+     clojure.lang.RT
+     (java.io File FileInputStream InputStreamReader
+              LineNumberReader PushbackReader)))
 
 ; Documentation:
 (defn doc-lookup
@@ -74,24 +78,110 @@
    :children (map #(-> % second var-info) (ns-interns the-namespace))})
 
 ; Omni Completion
-(defn complete-var-in-namespace
-  "Complete the given symbol name in the given namespace."
-  [the-name the-space]
-  (let [publics (-> the-space symbol the-ns ns-map keys)
-        publics (map name publics)]
-    (reduce (fn [completions sym]
-              (if (util/splitted-match the-name sym ["-"])
-                (let [sym-var (ns-resolve (symbol the-space) (symbol sym))]
-                  (conj completions [sym sym-var]))
-                completions))
-            [] publics)))
+(defmulti complete
+  "Complete the given base according to the given prefix and completion-type
+  in the context of the given namespace."
+  {:arglists '([completion-type nspace prefix base])}
+  (fn [completion-type _ _ _] completion-type))
 
-(defn complete-namespace
-  "Complete the namespace from the given partial pattern."
-  [the-name]
+(defmethod complete :full-var
+  [_ the-space _ the-name]
+  (let [publics (ns-map the-space)]
+    (reduce (fn [completions sym]
+              (if (util/splitted-match the-name (name sym) ["-"])
+                (conj completions [sym (publics sym)])
+                completions))
+            [] (keys publics))))
+
+(defmethod complete :local-var
+  [_ the-context the-space the-name]
+  (let [publics (if-let [the-real-space (get (ns-aliases the-context)
+                                             the-space)]
+                  (ns-publics the-real-space)
+                  (-> the-space the-ns ns-publics))]
+    (reduce (fn [completions sym]
+              (if (util/splitted-match the-name (name sym) ["-"])
+                (let [sym-var (publics sym)]
+                  (conj completions [(str (name the-space) "/" (name sym))
+                                     sym-var]))
+                completions))
+            [] (keys publics))))
+
+(defmethod complete :alias
+  [_ the-space _ the-name]
+  (let [aliases (ns-aliases the-space)]
+    (reduce (fn [completions aliass]
+              (let [alias-name (name aliass)]
+                (if (util/splitted-match the-name alias-name ["-"])
+                  (conj completions [alias-name (aliases aliass)])
+                  completions)))
+            [] (keys aliases))))
+
+(defmethod complete :import
+  [_ the-space _ the-name]
+  (let [imports (ns-imports the-space)]
+    (reduce (fn [completions klass]
+              (let [klass-name (name klass)]
+                (if (util/splitted-match the-name klass-name ["-"])
+                  (conj completions [klass-name (imports klass)])
+                  completions)))
+            [] (keys imports))))
+
+(defmethod complete :namespace
+  [_ _ _ the-name]
   (reduce (fn [completions nspace]
             (let [nspace-name (name (ns-name nspace))]
               (if (util/splitted-match the-name nspace-name ["\\." "-"])
                 (conj completions [nspace-name nspace])
                 completions)))
           [] (all-ns)))
+
+(defmethod complete :static-field
+  [_ the-space the-class the-name]
+  (let [static? #(-> % .getModifiers java.lang.reflect.Modifier/isStatic)
+        klass   (ns-resolve the-space the-class)]
+    (loop [completions  {}
+           fields       (seq (filter static? (concat (.getFields klass)
+                                                     (.getMethods klass))))]
+      (if fields
+        (let [member      (first fields)
+              member-name (.getName member)]
+          (if (.startsWith member-name the-name)
+            (recur (update-in completions [(str the-class "/" member-name)]
+                              conj member)
+                   (next fields))
+            (recur completions (next fields))))
+        (vec completions)))))
+
+; Source lookup. Taken from clojure.contrib.repl-utils and modified to
+; take a Var instead of a symbol.
+(defn get-source
+  "Returns a string of the source code for the given Var, if it can
+  find it. This requires that the Var is defined in a namespace for
+  which the .clj is in the classpath. Returns nil if it can't find
+  the source."
+  [the-var]
+  (let [fname (:file (meta the-var))
+        file  (File. fname)
+        strm  (if (.isAbsolute file)
+                (FileInputStream. file)
+                (.getResourceAsStream (RT/baseLoader) fname))]
+    (when strm
+      (with-open [rdr (LineNumberReader. (InputStreamReader. strm))]
+        (dotimes [_ (dec (:line ^the-var))] (.readLine rdr))
+        (let [text (StringBuilder.)
+              pbr (proxy [PushbackReader] [rdr]
+                    (read [] (let [i (proxy-super read)]
+                               (.append text (char i))
+                               i)))]
+          (read (PushbackReader. pbr))
+          (str text))))))
+
+; Source position
+(defn source-position
+  "Extract the position of the Var's source from its metadata."
+  [the-var]
+  (let [meta-info (meta the-var)
+        file      (:file meta-info)
+        line      (:line meta-info)]
+    {:file file :line line}))

@@ -27,10 +27,13 @@ argument.
 >
         ng ng-stop
 <
-Set the clj_wants_gorilla variable in your vimrc.
+Set the clj_want_gorilla variable in your vimrc.
 >
-        let g:clj_wants_gorilla = 1
+        let g:clj_want_gorilla = 1
 <
+Note: Should there be an error when executing an interactive command
+and the error message goes away to quickly, you can use |:messages| to
+recall the message and read it conveniently without time pressure.
 
 Syntax Highlighting                 *ft-clj-syntax*
 -------------------
@@ -93,6 +96,13 @@ Plug name and your setting will override the default mapping.
 
 <LocalLeader>rf                                 *rf* *RequireFile*
                         Require the namespace of the current file with
+                        the :reload flag. Note: For this to work with
+                        a remote Clojure server, the files have to put in
+                        place before issueing the command, eg. via scp
+                        or NFS.
+
+<LocalLeader>rF                                 *rF* *RequireFileAll*
+                        Require the namespace of the current file with
                         the :reload-all flag. Note: For this to work with
                         a remote Clojure server, the files have to put in
                         place before issueing the command, eg. via scp
@@ -126,6 +136,39 @@ Plug name and your setting will override the default mapping.
                         Open the javadoc for an arbitrary word in an
                         external browser. The user is prompted for input.
 
+<LocalLeader>sw                                 *sw* *SourceLookupWord*
+                        Show a read-only view of the source the word under
+                        the cursor. For this to work, the source must be
+                        available in the Classpath or as a file (depending
+                        on how the source was loaded).
+
+<LocalLeader>si                                 *si* *SourceLookupInteractive*
+                        Show a read-only view of the source of an arbitrary
+                        word. For this to work, the source must be available
+                        in the Classpath or as a file (depending on how the
+                        source was loaded).
+
+<LocalLeader>gw                                 *gw* *GotoSourceWord*
+                        Goto the source of the word under the cursor. For this
+                        to work, the source must be available in a directory
+                        of the |'path'| option. The directories in the
+                        CLOJURE_SOURCE_DIRS environment variable will be added
+                        to the |'path'| setting.
+
+<LocalLeader>gi                                 *gi* *GotoSourceInteractive*
+                        Goto the source of an arbitrary word. For this to work,
+                        the source must be available in a directory of the
+                        |'path'| option. The directories in the
+                        CLOJURE_SOURCE_DIRS environment variable will be added
+                        to the |'path'| setting.
+
+<LocalLeader>mw                                 *mw* *MetaLookupWord*
+                        Lookup the meta data of the word under the cursor.
+
+<LocalLeader>mi                                 *mi* *MetaLookupInteractive*
+                        Lookup the meta data of an arbitrary word. The
+                        user is prompted for input.
+
 <LocalLeader>sr                                 *sr* *StartRepl*
                         Start a new Vim Repl in a fresh buffer. There
                         might be multiple Repls at the same time.
@@ -148,12 +191,50 @@ The Plugs are:
  - <Plug>ClojureReplUpHistory for going backwards in history (<C-Up>)
  - <Plug>ClojureReplDownHistory for going forwards in history (<C-Down>)
 
+The following convenience commands are provided:
+
+ - ,close - close the Repl and free the Repl resources in the server process
+ - ,st - print a stack trace of *e as with clojure.contrib.stacktrace
+ - ,ct - print a cause trace of *e as with clojure.contrib.stacktrace
+
+Pretty Printing
+---------------
+
+In case Tom Faulhaber's cl-format package is available in the Classpath
+it will be used for pretty printing, eg. of macroexpansions. The Repl
+can be told to use pretty printing via a global Var.
+>
+        (set! de.kotka.vimclojure.repl/*print-pretty* true)
+<
+
 Omni Completion
 ---------------
 
 VimClojure supports omni completion for Clojure code. Hitting <C-X><C-O> in
 insert mode will try to provide completions for the item in front of the
-cursor. The match is fuzzy at dash boundaries, eg. r-s => read-string.
+cursor.
+
+The completion tries to be somewhat intelligent in what it completes.
+
+ - a word starting with an upper case letter will be completed to an
+   imported class.
+     Str<C-x><C-o> => String, StringBuilder, ...
+
+ - a word containing dots will be completed to a namespace.
+     c.c<C-x><C-o> => clojure.core, clojure.contrib.repl-utils, ...
+
+ - everything else will be completed to a Var, an alias or namespace.
+
+ - a word containing a slash will be handled differently
+   - if the word starts with an upper case letter, will complete
+     static fields of the given class
+       String/va<C-x><C-o> => String/valueOf
+
+   - otherwise it is treated as a namespace or alias
+       clojure.core/re<C-x><C-o> => clojure.core/read, ...
+
+The completion uses certain characters to split the matching. This are
+hyphens and (for namespaces) dots. So r-s<C-x><C-o> matches read-string.
 
 Note: Completion of symbols and keywords is also provided via the <C-N>
 functionality of Vim.

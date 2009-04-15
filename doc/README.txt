@@ -49,6 +49,7 @@ similar to:
 clojure.jar=/path/to/clojure.jar
 clojure-contrib.jar=/path/to/clojure-contrib.jar
 nailgun-client=ng
+vimdir=/path/to/install/vim/plugin
 ––8<––––8<––––8<––
 
 Once you have created this file, simply run ant. This should give a
@@ -57,6 +58,8 @@ Windows users: please leave out the last line in the properties file. The
 windows client for nailgun is included in the distribution as ng.exe. Delete
 it only in case you are sure, that you can rebuild it. You may see an error
 when building the nailgun-client. That's ok.
+
+Running „ant install“ will install the vim plugin into the named directory.
 
 To run the Nailgun server you need the clojure.jar, clojure-contrib.jar and
 vimclojure.jar in your Classpath:
@@ -70,10 +73,31 @@ links to) subdirectories you want in your classpath. Additionally the
 CLASSPATH environment variable will be added to the classpath.
 
 Put the nailgun client somewhere into your PATH or specify the location in
-your .vimrc.
+your .vimrc by means of the vimclojure#NailgunClient variable.
+
+––8<––––8<––––8<––
+let vimclojure#NailgunClient = "/path/to/your/ng"
+––8<––––8<––––8<––
 
 Please refer to the online documentation in the doc folder for further
 information on how to use VimClojure, its features and its caveats.
+
+Using Ivy
+=========
+
+Alternatively you may use Ivy to resolve the dependencies. Simply omit the
+first two lines in the local.properties file and ant will automatically
+download any missing dependencies. In case you don't have Ivy installed,
+this will be fetched also.
+
+VimClojure is available as Ivy dependency also. Run "ant publish-local"
+after building the VimClojure and use
+
+    <dependency org="de.kokta" name="vimclojure" rev="2.1.0"/>
+
+to include the VimClojure jar in your projects classpath. But mapping
+the dependency to a private configuration the dependency is only for
+development. Users of your project won't be bothered with the dependency.
 
 Meikel Branmdeyer <mb@kotka.de>
 Frankfurt am Main, 2009
