@@ -36,7 +36,7 @@
 #               example:"-Xms32M -Xmx128M -server"
 
 if [ -d "${CLOJURE_EXT:-}" ]; then
-	EXT="`find ${CLOJURE_EXT} -depth 1 -print0 | tr \\\\0 :`"
+	EXT="`find ${CLOJURE_EXT} -maxdepth 1 -print0 | tr \\\\0 :`"
 	if [ -n "${EXT}" ]; then
 		if [ -n "${CLASSPATH}" ]; then
 			CLASSPATH="${EXT}${CLASSPATH}"

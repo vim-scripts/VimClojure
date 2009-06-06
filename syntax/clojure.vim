@@ -34,7 +34,8 @@ if (exists("g:clj_highlight_builtins") && g:clj_highlight_builtins != 0)
 		\            . "*compile-path* *file* *flush-on-newline* "
 		\            . "*macro-meta* *math-context* *print-dup* "
 		\            . "*print-level* *use-context-classloader* "
-		\            . "*source-path*",
+		\            . "*source-path* *clojure-version* *read-eval*"
+		\            . "*1 *2 *3 *e",
 		\ "Define":    "def- defn defn- defmacro defmulti defmethod "
 		\            . "defstruct defonce declare definline ",
 		\ "Macro":     "and or -> assert with-out-str with-in-str with-open "
@@ -112,7 +113,7 @@ if (exists("g:clj_highlight_builtins") && g:clj_highlight_builtins != 0)
 		\            . "future-call methods mod pcalls prefers pvalues "
 		\            . "print-namespace-doc remove-watcher reset! "
 		\            . "reset-meta! type vary-meta unquote-splicing "
-		\            . "sequence"
+		\            . "sequence clojure-version counted? stream?"
 		\ }
 
 	for category in keys(s:builtins_map)
@@ -138,9 +139,9 @@ syn cluster clojureTopCluster    contains=@clojureAtomCluster,clojureComment,clo
 syn keyword clojureTodo contained FIXME XXX
 syn match   clojureComment contains=clojureTodo ";.*$"
 
-syn match   clojureKeyword ":\{1,2}\a[a-zA-Z0-9?!\-_+*\./=<>]*"
+syn match   clojureKeyword "\c:[a-z?!\-_+*./=<>][a-z0-9?!\-_+*\./=<>]*"
 
-syn region  clojureString start=/"/ end=/"/ skip=/\\"/
+syn region  clojureString start=/L\="/ skip=/\\\\\|\\"/ end=/"/
 
 syn match   clojureCharacter "\\."
 syn match   clojureCharacter "\\[0-7]\{3\}"
@@ -151,6 +152,13 @@ syn match   clojureCharacter "\\newline"
 syn match   clojureCharacter "\\return"
 syn match   clojureCharacter "\\backspace"
 syn match   clojureCharacter "\\formfeed"
+
+let radixChars = "0123456789abcdefghijklmnopqrstuvwxyz"
+for radix in range(2, 36)
+	execute 'syn match clojureNumber "\c\<-\?' . radix . 'r['
+				\ . strpart(radixChars, 0, radix)
+				\ . ']\+\>"'
+endfor
 
 syn match   clojureNumber "\<-\?[0-9]\+M\?\>"
 syn match   clojureRational "\<-\?[0-9]\+/[0-9]\+\>"

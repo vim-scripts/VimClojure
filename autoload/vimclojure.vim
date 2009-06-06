@@ -361,7 +361,7 @@ endfunction
 
 function! vimclojure#EvalLine()
 	let theLine = line(".")
-	let content = getline(theLine) - 1
+	let content = getline(theLine)
 	let file = vimclojure#BufferName()
 	let ns = b:vimclojure_namespace
 
