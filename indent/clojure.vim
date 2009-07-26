@@ -24,17 +24,11 @@ setlocal indentkeys=!,o,O
 if exists("*searchpairpos")
 
 function! s:MatchPairs(open, close, stopat)
-	let closure = { 'open': a:open, 'close': a:close, 'stopat': a:stopat }
-
-	function closure.f() dict
-		" Stop only on vector and map [ resp. {. Ignore the ones in strings and
-		" comments.
-		return searchpairpos(self.open, '', self.close, 'bW',
+	" Stop only on vector and map [ resp. {. Ignore the ones in strings and
+	" comments.
+	return searchpairpos(a:open, '', a:close, 'bWn',
 				\ 'vimclojure#SynIdName() !~ "clojureParen\\d"',
-				\ self.stopat)
-	endfunction
-
-	return vimclojure#WithSavedPosition(closure)
+				\ a:stopat)
 endfunction
 
 function! VimClojureCheckForStringWorker()
@@ -61,7 +55,7 @@ function! VimClojureCheckForStringWorker()
 		if vimclojure#SynIdName() != "clojureString"
 			return -1
 		endif
-		if vimclojure#Yank('l', 'normal "lyl') != '\\'
+		if vimclojure#Yank('l', 'normal! "lyl') != '\\'
 			return -1
 		endif
 		call cursor(0, col("$") - 1)
@@ -80,7 +74,19 @@ function! VimClojureCheckForString()
 	return vimclojure#WithSavedPosition({'f': function("VimClojureCheckForStringWorker")})
 endfunction
 
-function! GetClojureIndentWorker()
+function! GetClojureIndent()
+	" Get rid of special case.
+	if line(".") == 1
+		return 0
+	endif
+
+	" We have to apply some heuristics here to figure out, whether to use
+	" normal lisp indenting or not.
+	let i = VimClojureCheckForString()
+	if i > -1
+		return i
+	endif
+
 	call cursor(0, 1)
 
 	" Find the next enclosing [ or {. We can limit the second search
@@ -129,10 +135,13 @@ function! GetClojureIndentWorker()
 	endif
 
 	" In case after the paren is a whitespace, we search for the next word.
-	normal l
-	if vimclojure#Yank('l', 'normal "lyl') == ' '
-		normal w
+	normal! l
+	let reg = getreg("l")
+	normal! "lyl
+	if getreg("l") == ' '
+		normal! w
 	endif
+	call setreg("l", reg)
 
 	" If we moved to another line, there is no word after the (. We
 	" use the ( position for indent.
@@ -142,7 +151,10 @@ function! GetClojureIndentWorker()
 
 	" We still have to check, whether the keyword starts with a (, [ or {.
 	" In that case we use the ( position for indent.
-	let w = vimclojure#Yank('l', 'normal "lye')
+	let reg = getreg("l")
+	normal! "lye
+	let w = getreg("l")
+	call setreg("l", reg)
 	if stridx('([{', w[0]) > 0
 		return paren[1]
 	endif
@@ -151,29 +163,13 @@ function! GetClojureIndentWorker()
 		return paren[1] + &shiftwidth - 1
 	endif
 
-	normal w
+	normal! w
 	if paren[0] < line(".")
 		return paren[1] + &shiftwidth - 1
 	endif
 
-	normal ge
+	normal! ge
 	return col(".") + 1
-endfunction
-
-function! GetClojureIndent()
-	" Get rid of special case.
-	if line(".") == 1
-		return 0
-	endif
-
-	" We have to apply some heuristics here to figure out, whether to use
-	" normal lisp indenting or not.
-	let i = VimClojureCheckForString()
-	if i > -1
-		return i
-	endif
-
-	return vimclojure#WithSavedPosition({'f': function("GetClojureIndentWorker")})
 endfunction
 
 setlocal indentexpr=GetClojureIndent()
@@ -189,8 +185,9 @@ else
 endif
 
 " Defintions:
-setlocal lispwords=def,def-,defn,defn-,defmacro,defmacro-,defmethod,defmethod
-setlocal lispwords+=defonce,defvar,defvar-,defunbound,let,fn,binding,proxy
+setlocal lispwords=def,def-,defn,defn-,defmacro,defmacro-,defmethod,defmulti
+setlocal lispwords+=defonce,defvar,defvar-,defunbound,let,fn,letfn,binding,proxy
+setlocal lispwords+=defnk
 
 " Conditionals and Loops:
 setlocal lispwords+=if,if-not,if-let,when,when-not,when-let,when-first

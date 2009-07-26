@@ -4,20 +4,21 @@
 
     <configurations>
         <conf name="default"/>
-        <conf name="dev" extends="default"/>
-        <conf name="build" visibility="private"/>
     </configurations>
 
     <publications>
         <artifact name="vimclojure" type="jar" conf="default"/>
-        <artifact name="vimclojure-source" type="jar" conf="dev"/>
     </publications>
 
     <dependencies>
-        <dependency org="org.clojure" name="clojure-lang" rev="1.0.0"
-            conf="build->dev; default"/>
-        <dependency org="org.clojure" name="clojure-contrib"
-            rev="757" conf="build->source; default->def,pprint,stacktrace"/>
+        <dependency org="org.clojure" name="clojure" rev="1.0.0"
+            conf="default->compiled"/>
+        <dependency org="org.clojure.contrib" name="def" rev="919"
+            conf="default->compiled"/>
+        <dependency org="org.clojure.contrib" name="pprint" rev="919"
+            conf="default->compiled"/>
+        <dependency org="org.clojure.contrib" name="stacktrace" rev="919"
+            conf="default->compiled"/>
     </dependencies>
 
 </ivy-module>

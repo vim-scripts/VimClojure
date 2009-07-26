@@ -1,5 +1,5 @@
 " Vim syntax file
-" Language:	   Clojure
+" Language:    Clojure
 " Maintainer:  Toralf Wittner <toralf.wittner@gmail.com>
 "              modified by Meikel Brandmeyer <mb@kotka.de>
 " URL:         http://kotka.de/projects/clojure/vimclojure.html
@@ -139,7 +139,7 @@ syn cluster clojureTopCluster    contains=@clojureAtomCluster,clojureComment,clo
 syn keyword clojureTodo contained FIXME XXX
 syn match   clojureComment contains=clojureTodo ";.*$"
 
-syn match   clojureKeyword "\c:[a-z?!\-_+*./=<>][a-z0-9?!\-_+*\./=<>]*"
+syn match   clojureKeyword "\c:\{1,2}[a-z?!\-_+*./=<>][a-z0-9?!\-_+*\./=<>]*"
 
 syn region  clojureString start=/L\="/ skip=/\\\\\|\\"/ end=/"/
 
@@ -194,6 +194,8 @@ syn region  clojurePattern                          start=/#"/                  
 
 syn region  clojureCommentSexp                          start="("                                       end=")" transparent contained contains=clojureCommentSexp
 syn region  clojureComment     matchgroup=clojureParen0 start="(comment"rs=s+1 matchgroup=clojureParen0 end=")"                       contains=clojureCommentSexp
+syn region  clojureComment                              start="#!" end="\n"
+syn match   clojureComment "#_"
 
 syn sync match matchPlace grouphere NONE "^[^ \t]"
 

@@ -49,7 +49,7 @@ similar to:
 clojure.jar=/path/to/clojure.jar
 clojure-contrib.jar=/path/to/clojure-contrib.jar
 nailgun-client=ng
-vimdir=/path/to/install/vim/plugin
+vimdir=/custom/installation/path/for/vimplugin
 ––8<––––8<––––8<––
 
 Once you have created this file, simply run ant. This should give a
@@ -60,6 +60,9 @@ it only in case you are sure, that you can rebuild it. You may see an error
 when building the nailgun-client. That's ok.
 
 Running „ant install“ will install the vim plugin into the named directory.
+If you omit the vimdir line in the local.properties file the vim plugin
+will be installed in the user's runtime directory – <home>/.vim on Unic/Mac,
+<home>\vimfiles on Windows.
 
 To run the Nailgun server you need the clojure.jar, clojure-contrib.jar and
 vimclojure.jar in your Classpath:
@@ -81,6 +84,9 @@ let vimclojure#NailgunClient = "/path/to/your/ng"
 
 Please refer to the online documentation in the doc folder for further
 information on how to use VimClojure, its features and its caveats.
+
+Note: You might need to check the Makefile for special lib requirments
+to compile the nailgun client, eg. OpenSolaris.
 
 Using Ivy
 =========

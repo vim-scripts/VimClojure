@@ -6,18 +6,22 @@
 # Marty Lamb
 
 CC=gcc
-WIN32_CC=/usr/local/mingw32/bin/mingw32-gcc
 CFLAGS=-Wall -pedantic -s -O3
+
+# Special library requirements
+# Default:
+LIBS=
+
+# OpenSolaris 2009.06
+#LIBS=-lsocket -lnsl
+
+# Windows
+#LIBS=-lwsock32
 
 ng: ngclient/ng.c
 	@echo "Building ng client.  To build a Windows binary, type 'make ng.exe'"
-	${CC} ${CFLAGS} -o ng ngclient/ng.c
+	${CC} ${CFLAGS} ${LIBS} -o ng ngclient/ng.c
 
-ng.exe: ngclient/ng.c
-	# any idea why the command line is so sensitive to the order of
-	# the arguments?  If CFLAGS is at the beginning, it won't link.
-	${WIN32_CC} -o ng.exe ngclient/ng.c -lwsock32 -O3 ${CFLAGS}
-	
 clean:
 	@echo "If you have a Windows binary, 'make clean' won't delete it."
 	@echo "You must remove this manually.  Most users won't have MinGW"

@@ -141,8 +141,44 @@
     <target name="clean-all" depends="clean-lib,clean"
         description="--> clean all project files"/>
 
-    <target name="install" if="vimdir"
+    <target name="install"
         description="--> install the vim plugin">
+        <condition property="do.custom.install">
+            <isset property="vimdir"/>
+        </condition>
+        <condition property="do.windows.install">
+            <and>
+                <not><isset property="vimdir"/></not>
+                <os family="windows"/>
+            </and>
+        </condition>
+        <condition property="do.unix.install">
+            <and>
+                <not><isset property="vimdir"/></not>
+                <os family="unix"/>
+            </and>
+        </condition>
+        <antcall target="do-install"/>
+    </target>
+
+    <target name="do-install"
+        depends="do-windows-install,do-unix-install,do-custom-install"/>
+
+    <target name="do-windows-install" if="do.windows.install">
+        <property name="vimdir" location="${user.home}/vimfiles"/>
+        <antcall target="real-do-install"/>
+    </target>
+
+    <target name="do-unix-install" if="do.unix.install">
+        <property name="vimdir" location="${user.home}/.vim"/>
+        <antcall target="real-do-install"/>
+    </target>
+
+    <target name="do-custom-install" if="do.custom.install">
+        <antcall target="real-do-install"/>
+    </target>
+
+    <target name="real-do-install">
         <mkdir dir="${vimdir}/autoload"/>
         <mkdir dir="${vimdir}/doc"/>
         <mkdir dir="${vimdir}/indent"/>
