@@ -1,1 +1,1 @@
-au BufNewFile,BufRead *.clj setfiletype clojure
+au BufNewFile,BufRead *.clj set filetype=clojure
