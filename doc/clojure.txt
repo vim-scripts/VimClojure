@@ -238,6 +238,13 @@ turned off.
                         of the buffer. This modifies the way the form is
                         indented.
 
+                                                *g:clojure_no_default_key_mappings*
+
+You may remove the mapping of the default keybindings by setting the variable
+>
+        g:clojure_no_default_key_mappings = 1
+<
+
 Vim Repl
 --------
 
