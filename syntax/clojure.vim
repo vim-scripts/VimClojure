@@ -39,16 +39,16 @@ if g:vimclojure#HighlightBuiltins != 0
 		\            . "*print-meta* *print-readably* *print-length* "
 		\            . "*allow-unresolved-args* *compile-files* "
 		\            . "*compile-path* *file* *flush-on-newline* "
-		\            . "*math-context* *print-dup* "
+		\            . "*math-context* *unchecked-math* *print-dup* "
 		\            . "*print-level* *use-context-classloader* "
 		\            . "*source-path* *clojure-version* *read-eval* "
-		\            . "*1 *2 *3 *e",
+		\            . "*fn-loader* *1 *2 *3 *e",
 		\ "Define":    "def- defn defn- defmacro defmulti defmethod "
 		\            . "defstruct defonce declare definline definterface "
 		\            . "defprotocol defrecord deftype",
 		\ "Macro":     "and or -> assert with-out-str with-in-str with-open "
 		\            . "locking destructure ns dosync binding delay "
-		\            . "lazy-cons lazy-cat time assert doc with-precision "
+		\            . "lazy-cons lazy-cat time assert with-precision "
 		\            . "with-local-vars .. doto memfn proxy amap areduce "
 		\            . "refer-clojure future lazy-seq letfn "
 		\            . "with-loading-context bound-fn extend extend-protocol "
@@ -61,11 +61,12 @@ if g:vimclojure#HighlightBuiltins != 0
 		\            . "println pr-str prn-str print-str println-str newline "
 		\            . "macroexpand macroexpand-1 monitor-enter monitor-exit "
 		\            . "eval find-doc file-seq flush hash load load-file "
-		\            . "print-doc read read-line scan slurp subs sync test "
+		\            . "read read-line scan slurp subs sync test "
 		\            . "format printf loaded-libs use require load-reader "
-		\            . "load-string + - * / < <= == >= > dec inc min max neg? "
-		\            . "pos? quot rem zero? rand rand-int decimal? even? odd? "
-		\            . "float? integer? number? ratio? rational? "
+		\            . "load-string + +' -' *' /' < <= == >= > dec dec' "
+		\            . "inc inc' min max "
+		\            . "neg? pos? quot rem zero? rand rand-int decimal? even? "
+		\            . "odd? float? integer? number? ratio? rational? "
 		\            . "bit-and bit-or bit-xor bit-not bit-shift-left "
 		\            . "bit-shift-right symbol keyword gensym count conj seq "
 		\            . "first rest ffirst fnext nfirst nnext second every? "
@@ -108,11 +109,11 @@ if g:vimclojure#HighlightBuiltins != 0
 		\            . "not-empty ns-aliases ns-unalias num partition "
 		\            . "parents pmap prefer-method primitives-classnames "
 		\            . "print-ctor print-dup print-method print-simple "
-		\            . "print-special-doc proxy-call-with-super "
+		\            . "proxy-call-with-super "
 		\            . "proxy-super rationalize read-string remove "
 		\            . "remove-watch replace resultset-seq rsubseq "
 		\            . "seque set-validator! shutdown-agents subseq "
-		\            . "special-form-anchor syntax-symbol-anchor supers "
+		\            . "supers "
 		\            . "unchecked-add unchecked-dec unchecked-divide "
 		\            . "unchecked-inc unchecked-multiply unchecked-negate "
 		\            . "unchecked-subtract underive xml-seq trampoline "
@@ -121,7 +122,7 @@ if g:vimclojure#HighlightBuiltins != 0
 		\            . "release-pending-sends the-ns unquote while "
 		\            . "unchecked-remainder alter-meta! "
 		\            . "future-call methods mod pcalls prefers pvalues "
-		\            . "print-namespace-doc reset! "
+		\            . "reset! realized? some-fn "
 		\            . "reset-meta! type vary-meta unquote-splicing "
 		\            . "sequence clojure-version counted? "
 		\            . "chunk-buffer chunk-append chunk chunk-first "
@@ -142,7 +143,14 @@ if g:vimclojure#HighlightBuiltins != 0
 		\            . "satisfies?  set-error-handler!  set-error-mode! "
 		\            . "short-array shorts shuffle sorted-set-by take-last "
 		\            . "thread-bound? transient vector-of with-bindings* fnil "
-		\            . "spit"
+		\            . "spit biginteger every-pred find-keyword "
+		\            . "unchecked-add-int unchecked-byte unchecked-char "
+		\            . "unchecked-dec-int unchecked-divide-int "
+		\            . "unchecked-double unchecked-float "
+		\            . "unchecked-inc-int unchecked-int unchecked-long "
+		\            . "unchecked-multiply-int unchecked-negate-int "
+		\            . "unchecked-remainder-int unchecked-short "
+		\            . "unchecked-subtract-int with-redefs with-redefs-fn"
 		\ }
 
 	for category in keys(s:builtins_map)
@@ -195,7 +203,8 @@ for radix in range(2, 36)
 				\ . ']\+\>"'
 endfor
 
-syn match   clojureNumber "\<-\=[0-9]\+\(M\|\(\.[0-9]*\)\=\([eE][-+]\=[0-9]\+\)\=\)\=\>"
+syn match   clojureNumber "\<-\=[0-9]\+\(\.[0-9]*\)\=\(M\|\([eE][-+]\?[0-9]\+\)\)\?\>"
+syn match   clojureNumber "\<-\=[0-9]\+N\?\>"
 syn match   clojureNumber "\<-\=0x[0-9a-fA-F]\+\>"
 syn match   clojureNumber "\<-\=[0-9]\+/[0-9]\+\>"
 
@@ -206,20 +215,16 @@ syn match   clojureDispatch "\(#^\|#'\)"
 syn match   clojureAnonArg contained "%\(\d\|&\)\?"
 syn match   clojureVarArg contained "&"
 
-if vimclojure#ParenRainbow != 0
-	syn region clojureSexpLevel0 matchgroup=clojureParen0 start="(" matchgroup=clojureParen0 end=")"           contains=@clojureTopCluster,clojureSexpLevel1
-	syn region clojureSexpLevel1 matchgroup=clojureParen1 start="(" matchgroup=clojureParen1 end=")" contained contains=@clojureTopCluster,clojureSexpLevel2
-	syn region clojureSexpLevel2 matchgroup=clojureParen2 start="(" matchgroup=clojureParen2 end=")" contained contains=@clojureTopCluster,clojureSexpLevel3
-	syn region clojureSexpLevel3 matchgroup=clojureParen3 start="(" matchgroup=clojureParen3 end=")" contained contains=@clojureTopCluster,clojureSexpLevel4
-	syn region clojureSexpLevel4 matchgroup=clojureParen4 start="(" matchgroup=clojureParen4 end=")" contained contains=@clojureTopCluster,clojureSexpLevel5
-	syn region clojureSexpLevel5 matchgroup=clojureParen5 start="(" matchgroup=clojureParen5 end=")" contained contains=@clojureTopCluster,clojureSexpLevel6
-	syn region clojureSexpLevel6 matchgroup=clojureParen6 start="(" matchgroup=clojureParen6 end=")" contained contains=@clojureTopCluster,clojureSexpLevel7
-	syn region clojureSexpLevel7 matchgroup=clojureParen7 start="(" matchgroup=clojureParen7 end=")" contained contains=@clojureTopCluster,clojureSexpLevel8
-	syn region clojureSexpLevel8 matchgroup=clojureParen8 start="(" matchgroup=clojureParen8 end=")" contained contains=@clojureTopCluster,clojureSexpLevel9
-	syn region clojureSexpLevel9 matchgroup=clojureParen9 start="(" matchgroup=clojureParen9 end=")" contained contains=@clojureTopCluster,clojureSexpLevel0
-else
-	syn region clojureSexp       matchgroup=clojureParen0 start="(" matchgroup=clojureParen0 end=")"           contains=@clojureTopCluster
-endif
+syn region clojureSexpLevel0 matchgroup=clojureParen0 start="(" matchgroup=clojureParen0 end=")"           contains=@clojureTopCluster,clojureSexpLevel1
+syn region clojureSexpLevel1 matchgroup=clojureParen1 start="(" matchgroup=clojureParen1 end=")" contained contains=@clojureTopCluster,clojureSexpLevel2
+syn region clojureSexpLevel2 matchgroup=clojureParen2 start="(" matchgroup=clojureParen2 end=")" contained contains=@clojureTopCluster,clojureSexpLevel3
+syn region clojureSexpLevel3 matchgroup=clojureParen3 start="(" matchgroup=clojureParen3 end=")" contained contains=@clojureTopCluster,clojureSexpLevel4
+syn region clojureSexpLevel4 matchgroup=clojureParen4 start="(" matchgroup=clojureParen4 end=")" contained contains=@clojureTopCluster,clojureSexpLevel5
+syn region clojureSexpLevel5 matchgroup=clojureParen5 start="(" matchgroup=clojureParen5 end=")" contained contains=@clojureTopCluster,clojureSexpLevel6
+syn region clojureSexpLevel6 matchgroup=clojureParen6 start="(" matchgroup=clojureParen6 end=")" contained contains=@clojureTopCluster,clojureSexpLevel7
+syn region clojureSexpLevel7 matchgroup=clojureParen7 start="(" matchgroup=clojureParen7 end=")" contained contains=@clojureTopCluster,clojureSexpLevel8
+syn region clojureSexpLevel8 matchgroup=clojureParen8 start="(" matchgroup=clojureParen8 end=")" contained contains=@clojureTopCluster,clojureSexpLevel9
+syn region clojureSexpLevel9 matchgroup=clojureParen9 start="(" matchgroup=clojureParen9 end=")" contained contains=@clojureTopCluster,clojureSexpLevel0
 
 syn region  clojureAnonFn  matchgroup=clojureParen0 start="#(" matchgroup=clojureParen0 end=")"  contains=@clojureTopCluster,clojureAnonArg,clojureSexpLevel0
 syn region  clojureVector  matchgroup=clojureParen0 start="\[" matchgroup=clojureParen0 end="\]" contains=@clojureTopCluster,clojureVarArg,clojureSexpLevel0
@@ -271,28 +276,72 @@ HiLink clojureError     Error
 
 HiLink clojureParen0    Delimiter
 
-if vimclojure#ParenRainbow != 0
-	if &background == "dark"
-		highlight default clojureParen1 ctermfg=yellow      guifg=orange1
-		highlight default clojureParen2 ctermfg=green       guifg=yellow1
-		highlight default clojureParen3 ctermfg=cyan        guifg=greenyellow
-		highlight default clojureParen4 ctermfg=magenta     guifg=green1
-		highlight default clojureParen5 ctermfg=red         guifg=springgreen1
-		highlight default clojureParen6 ctermfg=yellow      guifg=cyan1
-		highlight default clojureParen7 ctermfg=green       guifg=slateblue1
-		highlight default clojureParen8 ctermfg=cyan        guifg=magenta1
-		highlight default clojureParen9 ctermfg=magenta     guifg=purple1
+if !exists("g:vimclojure#ParenRainbowColorsDark")
+	if exists("g:vimclojure#ParenRainbowColors")
+		let g:vimclojure#ParenRainbowColorsDark =
+					\ g:vimclojure#ParenRainbowColors
 	else
-		highlight default clojureParen1 ctermfg=darkyellow  guifg=orangered3
-		highlight default clojureParen2 ctermfg=darkgreen   guifg=orange2
-		highlight default clojureParen3 ctermfg=blue        guifg=yellow3
-		highlight default clojureParen4 ctermfg=darkmagenta guifg=olivedrab4
-		highlight default clojureParen5 ctermfg=red         guifg=green4
-		highlight default clojureParen6 ctermfg=darkyellow  guifg=paleturquoise3
-		highlight default clojureParen7 ctermfg=darkgreen   guifg=deepskyblue4
-		highlight default clojureParen8 ctermfg=blue        guifg=darkslateblue
-		highlight default clojureParen9 ctermfg=darkmagenta guifg=darkviolet
+		let g:vimclojure#ParenRainbowColorsDark = {
+					\ '1': 'ctermfg=yellow      guifg=orange1',
+					\ '2': 'ctermfg=green       guifg=yellow1',
+					\ '3': 'ctermfg=cyan        guifg=greenyellow',
+					\ '4': 'ctermfg=magenta     guifg=green1',
+					\ '5': 'ctermfg=red         guifg=springgreen1',
+					\ '6': 'ctermfg=yellow      guifg=cyan1',
+					\ '7': 'ctermfg=green       guifg=slateblue1',
+					\ '8': 'ctermfg=cyan        guifg=magenta1',
+					\ '9': 'ctermfg=magenta     guifg=purple1'
+					\ }
 	endif
+endif
+
+if !exists("g:vimclojure#ParenRainbowColorsLight")
+	if exists("g:vimclojure#ParenRainbowColors")
+		let g:vimclojure#ParenRainbowColorsLight =
+					\ g:vimclojure#ParenRainbowColors
+	else
+		let g:vimclojure#ParenRainbowColorsLight = {
+					\ '1': 'ctermfg=darkyellow  guifg=orangered3',
+					\ '2': 'ctermfg=darkgreen   guifg=orange2',
+					\ '3': 'ctermfg=blue        guifg=yellow3',
+					\ '4': 'ctermfg=darkmagenta guifg=olivedrab4',
+					\ '5': 'ctermfg=red         guifg=green4',
+					\ '6': 'ctermfg=darkyellow  guifg=paleturquoise3',
+					\ '7': 'ctermfg=darkgreen   guifg=deepskyblue4',
+					\ '8': 'ctermfg=blue        guifg=darkslateblue',
+					\ '9': 'ctermfg=darkmagenta guifg=darkviolet'
+					\ }
+	endif
+endif
+
+function! VimClojureSetupParenRainbow()
+	if &background == "dark"
+		let colors = g:vimclojure#ParenRainbowColorsDark
+	else
+		let colors = g:vimclojure#ParenRainbowColorsLight
+	endif
+
+	for [level, color] in items(colors)
+		execute "highlight clojureParen" . level . " " . color
+	endfor
+endfunction
+
+if vimclojure#ParenRainbow != 0
+	call VimClojureSetupParenRainbow()
+
+	augroup VimClojureSyntax
+		autocmd ColorScheme * if &ft == "clojure" | call VimClojureSetupParenRainbow() | endif
+	augroup END
+else
+	HiLink clojureParen1 clojureParen0
+	HiLink clojureParen2 clojureParen0
+	HiLink clojureParen3 clojureParen0
+	HiLink clojureParen4 clojureParen0
+	HiLink clojureParen5 clojureParen0
+	HiLink clojureParen6 clojureParen0
+	HiLink clojureParen7 clojureParen0
+	HiLink clojureParen8 clojureParen0
+	HiLink clojureParen9 clojureParen0
 endif
 
 delcommand HiLink

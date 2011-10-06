@@ -8,6 +8,7 @@
 *err*
 *file*
 *flush-on-newline*
+*fn-loader*
 *in*
 *math-context*
 *ns*
@@ -19,7 +20,9 @@
 *print-readably*
 *read-eval*
 *source-path*
+*unchecked-math*
 *use-context-classloader*
+*verbose-defrecords*
 *warn-on-reflection*
 ->>
 -cache-protocol-fn
@@ -67,6 +70,7 @@ bases
 bean
 bigdec
 bigint
+biginteger
 binding
 bit-and
 bit-and-not
@@ -133,6 +137,7 @@ create-ns
 create-struct
 cycle
 dec
+dec'
 decimal?
 declare
 definline
@@ -162,7 +167,6 @@ dissoc!
 distinct
 distinct?
 doall
-doc
 dorun
 doseq
 dosync
@@ -182,6 +186,7 @@ error-handler
 error-mode
 eval
 even?
+every-pred
 every?
 extend
 extend-protocol
@@ -193,7 +198,7 @@ ffirst
 file-seq
 filter
 find
-find-doc
+find-keyword
 find-ns
 find-protocol-impl
 find-protocol-method
@@ -240,6 +245,7 @@ ifn?
 import
 in-ns
 inc
+inc'
 init-proxy
 instance?
 int
@@ -352,12 +358,9 @@ prefers
 primitives-classnames
 print
 print-ctor
-print-doc
 print-dup
 print-method
-print-namespace-doc
 print-simple
-print-special-doc
 print-str
 printf
 println
@@ -389,6 +392,7 @@ re-seq
 read
 read-line
 read-string
+realized?
 reduce
 reductions
 ref
@@ -443,6 +447,7 @@ shuffle
 shutdown-agents
 slurp
 some
+some-fn
 sort
 sort-by
 sorted-map
@@ -450,7 +455,6 @@ sorted-map-by
 sorted-set
 sorted-set-by
 sorted?
-special-form-anchor
 special-symbol?
 spit
 split-at
@@ -467,7 +471,6 @@ swap!
 symbol
 symbol?
 sync
-syntax-symbol-anchor
 take
 take-last
 take-nth
@@ -484,13 +487,26 @@ tree-seq
 true?
 type
 unchecked-add
+unchecked-add-int
+unchecked-byte
+unchecked-char
 unchecked-dec
-unchecked-divide
+unchecked-dec-int
+unchecked-divide-int
+unchecked-double
+unchecked-float
 unchecked-inc
+unchecked-inc-int
+unchecked-int
+unchecked-long
 unchecked-multiply
+unchecked-multiply-int
 unchecked-negate
-unchecked-remainder
+unchecked-negate-int
+unchecked-remainder-int
+unchecked-short
 unchecked-subtract
+unchecked-subtract-int
 underive
 unquote
 unquote-splicing
@@ -521,6 +537,8 @@ with-meta
 with-open
 with-out-str
 with-precision
+with-redefs
+with-redefs-fn
 xml-seq
 zero?
 zipmap
