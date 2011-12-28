@@ -63,7 +63,7 @@ if g:vimclojure#HighlightBuiltins != 0
 		\            . "eval find-doc file-seq flush hash load load-file "
 		\            . "read read-line scan slurp subs sync test "
 		\            . "format printf loaded-libs use require load-reader "
-		\            . "load-string + +' -' *' /' < <= == >= > dec dec' "
+		\            . "load-string + - * / +' -' *' /' < <= == >= > dec dec' "
 		\            . "inc inc' min max "
 		\            . "neg? pos? quot rem zero? rand rand-int decimal? even? "
 		\            . "odd? float? integer? number? ratio? rational? "
@@ -233,9 +233,15 @@ syn region  clojureSet     matchgroup=clojureParen0 start="#{" matchgroup=clojur
 
 syn region  clojurePattern start=/L\=\#"/ skip=/\\\\\|\\"/ end=/"/
 
-syn region  clojureCommentSexp                          start="("                                       end=")" transparent contained contains=clojureCommentSexp
-syn region  clojureComment     matchgroup=clojureParen0 start="(comment"rs=s+1 matchgroup=clojureParen0 end=")"                       contains=clojureCommentSexp
-syn region  clojureComment                              start="#!" end="\n"
+" FIXME: Matching of 'comment' is broken. It seems we can't nest
+" the different highlighting items, when they share the same end
+" pattern.
+" See also: https://bitbucket.org/kotarak/vimclojure/issue/87/comment-is-highlighted-incorrectly
+"
+"syn region  clojureCommentSexp                          start="("                                       end=")" transparent contained contains=clojureCommentSexp
+"syn region  clojureComment     matchgroup=clojureParen0 start="(comment"rs=s+1 matchgroup=clojureParen0 end=")"                       contains=clojureTopCluster
+syn match   clojureComment "comment"
+syn region  clojureComment start="#!" end="\n"
 syn match   clojureComment "#_"
 
 syn sync fromstart

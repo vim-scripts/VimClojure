@@ -31,82 +31,85 @@ function! s:MatchPairs(open, close, stopat)
 				\ a:stopat)
 endfunction
 
-function! s:CheckForString()
-	let closure = {}
+function! ClojureCheckForStringWorker() dict
+	" Check whether there is the last character of the previous line is
+	" highlighted as a string. If so, we check whether it's a ". In this
+	" case we have to check also the previous character. The " might be the
+	" closing one. In case the we are still in the string, we search for the
+	" opening ". If this is not found we take the indent of the line.
+	let nb = prevnonblank(v:lnum - 1)
 
-	function closure.f() dict
-		" Check whether there is the last character of the previous line is
-		" highlighted as a string. If so, we check whether it's a ". In this
-		" case we have to check also the previous character. The " might be the
-		" closing one. In case the we are still in the string, we search for the
-		" opening ". If this is not found we take the indent of the line.
-		let nb = prevnonblank(v:lnum - 1)
+	if nb == 0
+		return -1
+	endif
 
-		if nb == 0
-			return -1
-		endif
+	call cursor(nb, 0)
+	call cursor(0, col("$") - 1)
+	if vimclojure#util#SynIdName() != "clojureString"
+		return -1
+	endif
 
-		call cursor(nb, 0)
-		call cursor(0, col("$") - 1)
+	" This will not work for a " in the first column...
+	if vimclojure#util#Yank('l', 'normal! "lyl') == '"'
+		call cursor(0, col("$") - 2)
 		if vimclojure#util#SynIdName() != "clojureString"
 			return -1
 		endif
-
-		" This will not work for a " in the first column...
-		if vimclojure#util#Yank('l', 'normal! "lyl') == '"'
-			call cursor(0, col("$") - 2)
-			if vimclojure#util#SynIdName() != "clojureString"
-				return -1
-			endif
-			if vimclojure#util#Yank('l', 'normal! "lyl') != '\\'
-				return -1
-			endif
-			call cursor(0, col("$") - 1)
+		if vimclojure#util#Yank('l', 'normal! "lyl') != '\\'
+			return -1
 		endif
+		call cursor(0, col("$") - 1)
+	endif
 
-		let p = searchpos('\(^\|[^\\]\)\zs"', 'bW')
+	let p = searchpos('\(^\|[^\\]\)\zs"', 'bW')
 
-		if p != [0, 0]
-			return p[1] - 1
-		endif
+	if p != [0, 0]
+		return p[1] - 1
+	endif
 
-		return indent(".")
-	endfunction
+	return indent(".")
+endfunction
 
-	return vimclojure#util#WithSavedPosition(closure)
+function! s:CheckForString()
+	return vimclojure#util#WithSavedPosition({
+				\ 'f' : function("ClojureCheckForStringWorker")
+				\ })
+endfunction
+
+function! ClojureIsMethodSpecialCaseWorker() dict
+	" Find the next enclosing form.
+	call vimclojure#util#MoveBackward()
+
+	" Special case: we are at a '(('.
+	if vimclojure#util#Yank('l', 'normal! "lyl') == '('
+		return 0
+	endif
+	call cursor(self.pos)
+
+	let nextParen = s:MatchPairs('(', ')', 0)
+
+	" Special case: we are now at toplevel.
+	if nextParen == [0, 0]
+		return 0
+	endif
+	call cursor(nextParen)
+
+	call vimclojure#util#MoveForward()
+	let keyword = vimclojure#util#Yank('l', 'normal! "lye')
+	if index([ 'deftype', 'defrecord', 'reify', 'proxy',
+				\ 'extend', 'extend-type', 'extend-protocol',
+				\ 'letfn' ], keyword) >= 0
+		return 1
+	endif
+
+	return 0
 endfunction
 
 function! s:IsMethodSpecialCase(position)
-	let closure = { 'pos': a:position }
-
-	function closure.f() dict
-		" Find the next enclosing form.
-		call vimclojure#util#MoveBackward()
-
-		" Special case: we are at a '(('.
-		if vimclojure#util#Yank('l', 'normal! "lyl') == '('
-			return 0
-		endif
-		call cursor(self.pos)
-
-		let nextParen = s:MatchPairs('(', ')', 0)
-
-		" Special case: we are now at toplevel.
-		if nextParen == [0, 0]
-			return 0
-		endif
-		call cursor(nextParen)
-
-		call vimclojure#util#MoveForward()
-		let keyword = vimclojure#util#Yank('l', 'normal! "lye')
-		if index([ 'deftype', 'defrecord', 'reify', 'proxy',
-					\ 'extend', 'extend-type', 'extend-protocol',
-					\ 'letfn' ], keyword) >= 0
-			return 1
-		endif
-
-		return 0
-	endfunction
+	let closure = {
+				\ 'pos': a:position,
+				\ 'f' : function("ClojureIsMethodSpecialCaseWorker")
+				\ }
 
 	return vimclojure#util#WithSavedPosition(closure)
 endfunction
@@ -200,7 +203,14 @@ function! GetClojureIndent()
 		return paren[1] + &shiftwidth - 1
 	endif
 
-	if g:vimclojure#FuzzyIndent && w =~ '\(^\|/\)\(def\|with\)'
+	" XXX: Slight glitch here with special cases. However it's only
+	" a heureustic. Offline we can't do more.
+	if g:vimclojure#FuzzyIndent
+				\ && w != 'with-meta'
+				\ && w != 'clojure.core/with-meta'
+				\ && w =~ '\(^\|/\)\(def\|with\)'
+				\ && w !~ '\(^\|/\)\(def\|with\).*\*$'
+				\ && w !~ '\(^\|/\)\(def\|with\).*-fn$'
 		return paren[1] + &shiftwidth - 1
 	endif
 

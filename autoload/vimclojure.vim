@@ -107,33 +107,34 @@ function! vimclojure#AddCompletions(ns)
 	endif
 endfunction
 
+function! ClojureExtractSexprWorker() dict
+	let pos = [0, 0]
+	let start = getpos(".")
+
+	if getline(start[1])[start[2] - 1] == "("
+				\ && vimclojure#util#SynIdName() =~ 'clojureParen' . self.level
+		let pos = [start[1], start[2]]
+	endif
+
+	if pos == [0, 0]
+		let pos = searchpairpos('(', '', ')', 'bW' . self.flag,
+					\ 'vimclojure#util#SynIdName() !~ "clojureParen\\d"')
+	endif
+
+	if pos == [0, 0]
+		throw "Error: Not in a s-expression!"
+	endif
+
+	return [pos, vimclojure#util#Yank('l', 'normal! "ly%')]
+endfunction
+
 " Nailgun part:
 function! vimclojure#ExtractSexpr(toplevel)
 	let closure = {
 				\ "flag"  : (a:toplevel ? "r" : ""),
-				\ "level" : (a:toplevel ? "0" : '\d')
+				\ "level" : (a:toplevel ? "0" : '\d'),
+				\ "f"     : function("ClojureExtractSexprWorker")
 				\ }
-
-	function closure.f() dict
-		let pos = [0, 0]
-		let start = getpos(".")
-
-		if getline(start[1])[start[2] - 1] == "("
-					\ && vimclojure#util#SynIdName() =~ 'clojureParen' . self.level
-			let pos = [start[1], start[2]]
-		endif
-
-		if pos == [0, 0]
-			let pos = searchpairpos('(', '', ')', 'bW' . self.flag,
-						\ 'vimclojure#util#SynIdName() !~ "clojureParen\\d"')
-		endif
-
-		if pos == [0, 0]
-			throw "Error: Not in a s-expression!"
-		endif
-
-		return [pos, vimclojure#util#Yank('l', 'normal! "ly%')]
-	endfunction
 
 	return vimclojure#util#WithSavedPosition(closure)
 endfunction
@@ -225,6 +226,7 @@ let vimclojure#Object = {}
 
 function! vimclojure#Object.New(...) dict
 	let instance = copy(self)
+	let instance.prototype = self
 
 	call call(instance.Init, a:000, instance)
 
@@ -321,21 +323,29 @@ let vimclojure#ResultBuffer["__superBufferNew"] = vimclojure#ResultBuffer["New"]
 let vimclojure#ResultBuffer["__superBufferInit"] = vimclojure#ResultBuffer["Init"]
 let vimclojure#ResultBuffer.__instance = []
 
+function! ClojureResultBufferNewWorker() dict
+	set switchbuf=useopen
+	call self.instance.goHereWindow()
+	call call(self.instance.Init, self.args, self.instance)
+
+	return self.instance
+endfunction
+
 function! vimclojure#ResultBuffer.New(...) dict
 	if g:vimclojure#ResultBuffer.__instance != []
-		let closure = {
-					\ 'instance' : g:vimclojure#ResultBuffer.__instance[0],
-					\ 'args'     : a:000
-					\ }
-		function closure.f() dict
-			set switchbuf=useopen
-			call self.instance.goHereWindow()
-			call call(self.instance.Init, self.args, self.instance)
+		let oldInstance = g:vimclojure#ResultBuffer.__instance[0]
 
-			return self.instance
-		endfunction
+		if oldInstance.prototype is self
+			let closure = {
+						\ 'instance' : oldInstance,
+						\ 'args'     : a:000,
+						\ 'f'        : function("ClojureResultBufferNewWorker")
+						\ }
 
-		return vimclojure#util#WithSavedOption('switchbuf', closure)
+			return vimclojure#util#WithSavedOption('switchbuf', closure)
+		else
+			call oldInstance.close()
+		endif
 	endif
 
 	let b:vimclojure_result_buffer = 1
@@ -401,13 +411,16 @@ if !exists("vimclojure#NailgunClient")
 	let vimclojure#NailgunClient = "ng"
 endif
 
-function! vimclojure#ShellEscapeArguments(vals)
-	let closure = { 'vals': a:vals }
+function! ClojureShellEscapeArgumentsWorker() dict
+	set noshellslash
+	return map(copy(self.vals), 'shellescape(v:val)')
+endfunction
 
-	function closure.f() dict
-		set noshellslash
-		return map(copy(self.vals), 'shellescape(v:val)')
-	endfunction
+function! vimclojure#ShellEscapeArguments(vals)
+	let closure = {
+				\ 'vals': a:vals,
+				\ 'f'   : function("ClojureShellEscapeArgumentsWorker")
+				\ }
 
 	return vimclojure#util#WithSavedOption('shellslash', closure)
 endfunction
@@ -664,17 +677,17 @@ function! vimclojure#EvalToplevel()
 	wincmd p
 endfunction
 
+function! ClojureEvalParagraphWorker() dict
+	normal! }
+	return line(".")
+endfunction
+
 function! vimclojure#EvalParagraph()
 	let file = vimclojure#BufferName()
 	let ns = b:vimclojure_namespace
 	let startPosition = line(".")
 
-	let closure = {}
-
-	function! closure.f() dict
-		normal! }
-		return line(".")
-	endfunction
+	let closure = { 'f' : function("ClojureEvalParagraphWorker") }
 
 	let endPosition = vimclojure#util#WithSavedPosition(closure)
 

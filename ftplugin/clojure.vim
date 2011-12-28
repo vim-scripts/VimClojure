@@ -59,22 +59,25 @@ for ns in [ "clojure.core", "clojure.inspector", "clojure.java.browse",
 endfor
 
 " Define toplevel folding if desired.
+function! ClojureGetFoldingLevelWorker() dict
+	execute self.lineno
+
+	if vimclojure#util#SynIdName() =~ 'clojureParen\d' && vimclojure#util#Yank('l', 'normal! "lyl') == '('
+		return 1
+	endif
+
+	if searchpairpos('(', '', ')', 'bWr', 'vimclojure#util#SynIdName() !~ "clojureParen\\d"') != [0, 0]
+		return 1
+	endif
+
+	return 0
+endfunction
+
 function! ClojureGetFoldingLevel(lineno)
-	let closure = { 'lineno' : a:lineno }
-
-	function closure.f() dict
-		execute self.lineno
-
-		if vimclojure#util#SynIdName() =~ 'clojureParen\d' && vimclojure#util#Yank('l', 'normal! "lyl') == '('
-			return 1
-		endif
-
-		if searchpairpos('(', '', ')', 'bWr', 'vimclojure#util#SynIdName() !~ "clojureParen\\d"') != [0, 0]
-			return 1
-		endif
-
-		return 0
-	endfunction
+	let closure = {
+				\ 'lineno' : a:lineno,
+				\ 'f'      : function("ClojureGetFoldingLevelWorker")
+				\ }
 
 	return vimclojure#WithSavedPosition(closure)
 endfunction
