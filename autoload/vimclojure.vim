@@ -75,6 +75,14 @@ if !exists("g:vimclojure#UseErrorBuffer")
 	let vimclojure#UseErrorBuffer = 1
 endif
 
+if !exists("g:vimclojure#SetupKeyMap")
+	let vimclojure#SetupKeyMap = 1
+endif
+
+if !exists("g:vimclojure#SearchThreshold")
+	let vimclojure#SearchThreshold = 100
+endif
+
 function! vimclojure#ReportError(msg)
 	if g:vimclojure#UseErrorBuffer
 		let buf = g:vimclojure#ResultBuffer.New()
@@ -148,34 +156,29 @@ function! vimclojure#BufferName()
 endfunction
 
 " Key mappings and Plugs
-function! vimclojure#MakePlug(mode, plug, f, args)
-	if a:mode == "i"
-		let esc = "<ESC>"
-	else
-		let esc = ""
-	endif
-
-	execute a:mode . "noremap <Plug>Clojure" . a:plug
-				\ . " " . esc . ":call " . a:f . "(" . a:args . ")<CR>"
-endfunction
-
 function! vimclojure#MakeProtectedPlug(mode, plug, f, args)
-	execute a:mode . "noremap <Plug>Clojure" . a:plug
-				\ . " :call vimclojure#ProtectedPlug(function(\""
+	execute a:mode . "noremap <Plug>Clojure" . a:plug . "."
+				\ . " :<C-U>call vimclojure#ProtectedPlug(function(\""
 				\ . a:f . "\"), [ " . a:args . " ])<CR>"
 endfunction
 
 function! vimclojure#MakeCommandPlug(mode, plug, f, args)
-	execute a:mode . "noremap <Plug>Clojure" . a:plug
-				\ . " :call vimclojure#ProtectedPlug("
+	execute a:mode . "noremap <Plug>Clojure" . a:plug . "."
+				\ . " :<C-U>call vimclojure#ProtectedPlug("
 				\ . " function(\"vimclojure#CommandPlug\"),"
 				\ . " [ function(\"" . a:f . "\"), [ " . a:args . " ]])<CR>"
 endfunction
 
 function! vimclojure#MapPlug(mode, keys, plug)
-	if !hasmapto("<Plug>Clojure" . a:plug, a:mode)
+	if exists("g:vimclojure#SetupKeyMap" . a:plug)
+		execute "let doSetup = g:vimclojure#SetupKeyMap" . a:plug
+	else
+		let doSetup = g:vimclojure#SetupKeyMap
+	endif
+
+	if doSetup && !hasmapto("<Plug>Clojure" . a:plug, a:mode)
 		execute a:mode . "map <buffer> <unique> <silent> <LocalLeader>" . a:keys
-					\ . " <Plug>Clojure" . a:plug
+					\ . " <Plug>Clojure" . a:plug . "."
 	endif
 endfunction
 
@@ -287,7 +290,9 @@ endfunction
 function! vimclojure#Buffer.showText(text) dict
 	call self.goHere()
 	if type(a:text) == type("")
-		let text = split(a:text, '\n')
+		" XXX: Opening the box of the pandora.
+		" 2012-01-09: Adding Carriage Returns here.
+		let text = split(a:text, '\r\?\n')
 	else
 		let text = a:text
 	endif
@@ -655,7 +660,7 @@ function! vimclojure#EvalBlock()
 	let file = vimclojure#BufferName()
 	let ns = b:vimclojure_namespace
 
-	let content = getbufline(bufnr("%"), line("'<"), line("'>"))
+	let content = vimclojure#util#Yank("l", 'normal! gv"ly')
 	let result = vimclojure#ExecuteNailWithInput("Repl", content,
 				\ "-r", "-n", ns, "-f", file, "-l", line("'<") - 1)
 
@@ -704,6 +709,7 @@ endfunction
 let vimclojure#Repl = copy(vimclojure#Buffer)
 let vimclojure#Repl.__superBufferNew = vimclojure#Repl.New
 let vimclojure#Repl.__superBufferInit = vimclojure#Repl.Init
+let vimclojure#Repl.__superBufferClear = vimclojure#Repl.clear
 
 let vimclojure#Repl._history = []
 let vimclojure#Repl._historyDepth = 0
@@ -808,6 +814,11 @@ function! vimclojure#Repl.showPrompt() dict
 	call self.showText(self._prompt . " ")
 	normal! G
 	startinsert!
+endfunction
+
+function! vimclojure#Repl.clear() dict
+	call self.__superBufferClear()
+	call self.showPrompt()
 endfunction
 
 function! vimclojure#Repl.getCommand() dict

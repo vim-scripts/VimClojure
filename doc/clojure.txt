@@ -127,6 +127,17 @@ were included in the 'lispwords' option.
 <
 This option is disabled by default.
 
+To be able to properly indent a given line there is some searching
+necessary to determine the surroundings of the cursor. In big files
+this my result in a slow down when entering a new line. So there is
+an option to basically limit the horizon which is searched for the
+indentation to synchronise. By default this is 100 lines backwards in
+the file. However you may specify whatever value works best for you.
+Higher values mean more searching.
+>
+        let vimclojure#SearchThreshold = 100
+<
+
 Preview Window
 --------------
 
@@ -146,11 +157,26 @@ Note: <LocalLeader> is a Vim feature. More information can be found
 under the |maplocalleader| help topic.
 
 You can redefine any key mapping using some autocommand in your .vimrc file.
-All mappings use so-called Plugs. Simply prepend <Plug>Clojure to the given
-Plug name and your setting will override the default mapping.
+All mappings use so-called Plugs. Simply prepend "<Plug>Clojure" to the given
+Plug name, append a "." and your setting will override the default mapping.
 >
-        aucmd BufRead,BufNewFile *.clj nmap xyz <Plug>ClojureEvalToplevel
+        aucmd BufRead,BufNewFile *.clj nmap xyz <Plug>ClojureEvalToplevel.
 <
+To inhibit all mappings set the global flag to zero:
+>
+        let vimclojure#SetupKeyMap = 0
+<
+To inhibit only single mappings append the plug name:
+>
+        let vimclojure#SetupKeyMapEvalToplevel = 0
+<
+To enable only single mappings first turn off all flags, and then
+whitelist the ones you want to be enabled:
+>
+        let vimclojure#SetupKeyMap = 0
+        let vimclojure#SetupKeyMapEvalToplevel = 1
+<
+Whatever setting: it will still honor any key mapping made by yourself.
 
 <LocalLeader>et                                 *et* *EvalToplevel*
                         Send off the toplevel sexpression currently

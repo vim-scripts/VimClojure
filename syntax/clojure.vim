@@ -182,7 +182,7 @@ syn cluster clojureTopCluster    contains=@clojureAtomCluster,clojureComment,clo
 syn keyword clojureTodo contained FIXME XXX TODO FIXME: XXX: TODO:
 syn match   clojureComment contains=clojureTodo ";.*$"
 
-syn match   clojureKeyword "\c:\{1,2}[a-z?!\-_+*./=<>#$][a-z0-9?!\-_+*\./=<>#$]*"
+syn match   clojureKeyword "\c:\{1,2}[a-z0-9?!\-_+*.=<>#$]\+\(/[a-z0-9?!\-_+*.=<>#$]\+\)\?"
 
 syn region  clojureString start=/L\="/ skip=/\\\\\|\\"/ end=/"/
 
@@ -211,6 +211,7 @@ syn match   clojureNumber "\<-\=[0-9]\+/[0-9]\+\>"
 syn match   clojureQuote "\('\|`\)"
 syn match   clojureUnquote "\(\~@\|\~\)"
 syn match   clojureDispatch "\(#^\|#'\)"
+syn match   clojureDispatch "\^"
 
 syn match   clojureAnonArg contained "%\(\d\|&\)\?"
 syn match   clojureVarArg contained "&"
@@ -336,6 +337,7 @@ if vimclojure#ParenRainbow != 0
 	call VimClojureSetupParenRainbow()
 
 	augroup VimClojureSyntax
+		au!
 		autocmd ColorScheme * if &ft == "clojure" | call VimClojureSetupParenRainbow() | endif
 	augroup END
 else
