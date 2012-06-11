@@ -120,12 +120,25 @@ to the 'lispwords' option. The names of these forms often follow a
 pattern like "defsomething" or "with-something".
 
 By setting the fuzzy indent option, you can tell VimClojure, that you
-want names beginning in "def" or "with" to be indented as if they
+want names matching a fuzzy indent pattern to be indented as if they
 were included in the 'lispwords' option.
 >
         let vimclojure#FuzzyIndent = 1
 <
 This option is disabled by default.
+
+Custom fuzzy indent patterns may be specified as normal regular expressions
+in the corresponding option. The patterns are matched against the leading
+symbol of the form in a way to ignore namespace aliases. The default
+patterns are “def.*”, “with.*” and “let.*”.
+
+For example, consider working a lot with core.logic. Then you may specify
+eg. “fresh” in .vim/after/ftplugin/clojure.vim.
+>
+        let vimclojure#FuzzyIndentPatterns .= ",fresh"
+<
+Note: this is a normal variable. So you have to use “.=” rather than
+“+=” and the comma separator has to be given explicitly.
 
 To be able to properly indent a given line there is some searching
 necessary to determine the surroundings of the cursor. In big files
@@ -327,11 +340,11 @@ If the current line starts with a repl prompt, the *^* command moves to
 the end of the prompt and to the beginning of the line.
 
 The Plugs are:
- - <Plug>ClojureReplEnterHook for the enter key
- - <Plug>ClojureReplEvaluate for immediate evaluation (<C-CR>)
- - <Plug>ClojureReplHatHook for ^ navigation
- - <Plug>ClojureReplUpHistory for going backwards in history (<C-Up>)
- - <Plug>ClojureReplDownHistory for going forwards in history (<C-Down>)
+ - <Plug>ClojureReplEnterHook. for the enter key
+ - <Plug>ClojureReplEvaluate. for immediate evaluation (<C-CR>)
+ - <Plug>ClojureReplHatHook. for ^ navigation
+ - <Plug>ClojureReplUpHistory. for going backwards in history (<C-Up>)
+ - <Plug>ClojureReplDownHistory. for going forwards in history (<C-Down>)
 
 The following convenience commands are provided:
 

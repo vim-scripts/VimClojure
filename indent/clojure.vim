@@ -214,10 +214,13 @@ function! GetClojureIndent()
 	if g:vimclojure#FuzzyIndent
 				\ && w != 'with-meta'
 				\ && w != 'clojure.core/with-meta'
-				\ && w =~ '\(^\|/\)\(def\|with\|let\)'
-				\ && w !~ '\(^\|/\)\(def\|with\).*\*$'
-				\ && w !~ '\(^\|/\)\(def\|with\).*-fn$'
-		return paren[1] + &shiftwidth - 1
+		for pat in split(g:vimclojure#FuzzyIndentPatterns, ",")
+			if w =~ '\(^\|/\)' . pat . '$'
+						\ && w !~ '\(^\|/\)' . pat . '\*$'
+						\ && w !~ '\(^\|/\)' . pat . '-fn$'
+				return paren[1] + &shiftwidth - 1
+			endif
+		endfor
 	endif
 
 	normal! w
