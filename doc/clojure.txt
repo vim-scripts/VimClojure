@@ -216,14 +216,14 @@ Whatever setting: it will still honor any key mapping made by yourself.
                         Require the namespace of the current file with
                         the :reload flag. Note: For this to work with
                         a remote Clojure server, the files have to put in
-                        place before issueing the command, eg. via scp
+                        place before issuing the command, eg. via scp
                         or NFS.
 
 <LocalLeader>rF                                 *rF* *RequireFileAll*
                         Require the namespace of the current file with
                         the :reload-all flag. Note: For this to work with
                         a remote Clojure server, the files have to put in
-                        place before issueing the command, eg. via scp
+                        place before issuing the command, eg. via scp
                         or NFS.
 
 <LocalLeader>rt                                 *rt* *RunTests*
@@ -232,7 +232,7 @@ Whatever setting: it will still honor any key mapping made by yourself.
                         to run the tests of the namespace via run-tests.
                         Note: For this to work with a remote Clojure
                         server, the files have to put in place before
-                        issueing the command, eg. via scp or NFS.
+                        issuing the command, eg. via scp or NFS.
 
 <LocalLeader>me                                 *me* *MacroExpand*
                         Expand the innermost sexpression currently

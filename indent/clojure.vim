@@ -229,7 +229,7 @@ function! GetClojureIndent()
 	endif
 
 	normal! ge
-	return col(".") + 1
+	return virtcol(".") + 1
 endfunction
 
 setlocal indentexpr=GetClojureIndent()

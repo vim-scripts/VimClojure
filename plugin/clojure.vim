@@ -55,6 +55,6 @@ nnoremap <Plug>ClojureReplHatHook. :call b:vimclojure_repl.hatHook()<CR>
 inoremap <Plug>ClojureReplUpHistory. <C-O>:call b:vimclojure_repl.upHistory()<CR>
 inoremap <Plug>ClojureReplDownHistory. <C-O>:call b:vimclojure_repl.downHistory()<CR>
 
-nnoremap <Plug>ClojureCloseResultBuffer. :call vimclojure#ResultBuffer.CloseBuffer()<CR>
+nnoremap <Plug>ClojureCloseResultBuffer. :call vimclojure#ResultWindow.CloseWindow()<CR>
 
 let &cpo = s:cpo_save
