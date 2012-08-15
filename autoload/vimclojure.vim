@@ -520,6 +520,19 @@ function! vimclojure#ExecuteNail(nail, ...)
 	return call(function("vimclojure#ExecuteNailWithInput"), [a:nail, ""] + a:000)
 endfunction
 
+function! vimclojure#ShowResult(result)
+	let buf = g:vimclojure#ResultWindow.New(g:vimclojure#ResultBuffer)
+	call buf.showOutput(a:result)
+	wincmd p
+endfunction
+
+function! vimclojure#ShowClojureResult(result, nspace)
+	let buf = g:vimclojure#ResultWindow.New(g:vimclojure#ClojureResultBuffer)
+	let b:vimclojure_namespace = a:nspace
+	call buf.showOutput(a:result)
+	wincmd p
+endfunction
+
 function! vimclojure#DocLookup(word)
 	if a:word == ""
 		return
@@ -527,17 +540,13 @@ function! vimclojure#DocLookup(word)
 
 	let doc = vimclojure#ExecuteNailWithInput("DocLookup", a:word,
 				\ "-n", b:vimclojure_namespace)
-	let buf = g:vimclojure#ResultWindow.New(g:vimclojure#ResultBuffer)
-	call buf.showOutput(doc)
-	wincmd p
+	call vimclojure#ShowResult(doc)
 endfunction
 
 function! vimclojure#FindDoc()
 	let pattern = input("Pattern to look for: ")
 	let doc = vimclojure#ExecuteNailWithInput("FindDoc", pattern)
-	let buf = g:vimclojure#ResultWindow.New(g:vimclojure#ResultBuffer)
-	call buf.showOutput(doc)
-	wincmd p
+	call vimclojure#ShowResult(doc)
 endfunction
 
 let s:DefaultJavadocPaths = {
@@ -579,9 +588,7 @@ function! vimclojure#JavadocLookup(word)
 				\ "-n", b:vimclojure_namespace)
 
 	if path.stderr != ""
-		let buf = g:vimclojure#ResultWindow.New(g:vimclojure#ResultBuffer)
-		call buf.showOutput(path)
-		wincmd p
+		call vimclojure#ShowResult(path)
 		return
 	endif
 
@@ -603,21 +610,13 @@ endfunction
 function! vimclojure#SourceLookup(word)
 	let source = vimclojure#ExecuteNailWithInput("SourceLookup", a:word,
 				\ "-n", b:vimclojure_namespace)
-	let ns = b:vimclojure_namespace
-	let buf = g:vimclojure#ResultWindow.New(g:vimclojure#ClojureResultBuffer)
-	let b:vimclojure_namespace = ns
-	call buf.showOutput(source)
-	wincmd p
+	call vimclojure#ShowClojureResult(source, b:vimclojure_namespace)
 endfunction
 
 function! vimclojure#MetaLookup(word)
 	let meta = vimclojure#ExecuteNailWithInput("MetaLookup", a:word,
 				\ "-n", b:vimclojure_namespace)
-	let ns = b:vimclojure_namespace
-	let buf = g:vimclojure#ResultWindow.New(g:vimclojure#ClojureResultBuffer)
-	let b:vimclojure_namespace = ns
-	call buf.showOutput(meta)
-	wincmd p
+	call vimclojure#ShowClojureResult(meta, b:vimclojure_namespace)
 endfunction
 
 function! vimclojure#GotoSource(word)
@@ -625,9 +624,7 @@ function! vimclojure#GotoSource(word)
 				\ "-n", b:vimclojure_namespace)
 
 	if pos.stderr != ""
-		let buf = g:vimclojure#ResultWindow.New(g:vimclojure#ResultBuffer)
-		call buf.showOutput(pos)
-		wincmd p
+		call vimclojure#ShowResult(pos)
 		return
 	endif
 
@@ -656,10 +653,7 @@ function! vimclojure#MacroExpand(firstOnly)
 
 	let expanded = call(function("vimclojure#ExecuteNailWithInput"), cmd)
 
-	let buf = g:vimclojure#ResultWindow.New(g:vimclojure#ClojureResultBuffer)
-	let b:vimclojure_namespace = ns
-	call buf.showOutput(expanded)
-	wincmd p
+	call vimclojure#ShowClojureResult(expanded, ns)
 endfunction
 
 function! vimclojure#RequireFile(all)
@@ -669,10 +663,7 @@ function! vimclojure#RequireFile(all)
 	let require = "(require :reload" . all . " :verbose '". ns. ")"
 	let result = vimclojure#ExecuteNailWithInput("Repl", require, "-r")
 
-	let buf = g:vimclojure#ResultWindow.New(g:vimclojure#ClojureResultBuffer)
-	let b:vimclojure_namespace = ns
-	call resultBuffer.showOutput(result)
-	wincmd p
+	call vimclojure#ShowClojureResult(result, ns)
 endfunction
 
 function! vimclojure#RunTests(all)
@@ -680,10 +671,8 @@ function! vimclojure#RunTests(all)
 
 	let result = call(function("vimclojure#ExecuteNailWithInput"),
 				\ [ "RunTests", "", "-n", ns ] + (a:all ? [ "-a" ] : []))
-	let buf = g:vimclojure#ResultWindow.New(g:vimclojure#ClojureResultBuffer)
-	let b:vimclojure_namespace = ns
-	call resultBuffer.showOutput(result)
-	wincmd p
+
+	call vimclojure#ShowClojureResult(result, ns)
 endfunction
 
 function! vimclojure#EvalFile()
@@ -694,10 +683,7 @@ function! vimclojure#EvalFile()
 	let result = vimclojure#ExecuteNailWithInput("Repl", content,
 				\ "-r", "-n", ns, "-f", file)
 
-	let buf = g:vimclojure#ResultWindow.New(g:vimclojure#ClojureResultBuffer)
-	let b:vimclojure_namespace = ns
-	call resultBuffer.showOutput(result)
-	wincmd p
+	call vimclojure#ShowClojureResult(result, ns)
 endfunction
 
 function! vimclojure#EvalLine()
@@ -709,10 +695,7 @@ function! vimclojure#EvalLine()
 	let result = vimclojure#ExecuteNailWithInput("Repl", content,
 				\ "-r", "-n", ns, "-f", file, "-l", theLine)
 
-	let buf = g:vimclojure#ResultWindow.New(g:vimclojure#ClojureResultBuffer)
-	let b:vimclojure_namespace = ns
-	call resultBuffer.showOutput(result)
-	wincmd p
+	call vimclojure#ShowClojureResult(result, ns)
 endfunction
 
 function! vimclojure#EvalBlock()
@@ -723,10 +706,7 @@ function! vimclojure#EvalBlock()
 	let result = vimclojure#ExecuteNailWithInput("Repl", content,
 				\ "-r", "-n", ns, "-f", file, "-l", line("'<") - 1)
 
-	let buf = g:vimclojure#ResultWindow.New(g:vimclojure#ClojureResultBuffer)
-	let b:vimclojure_namespace = ns
-	call resultBuffer.showOutput(result)
-	wincmd p
+	call vimclojure#ShowClojureResult(result, ns)
 endfunction
 
 function! vimclojure#EvalToplevel()
@@ -737,10 +717,7 @@ function! vimclojure#EvalToplevel()
 	let result = vimclojure#ExecuteNailWithInput("Repl", expr,
 				\ "-r", "-n", ns, "-f", file, "-l", pos[0] - 1)
 
-	let buf = g:vimclojure#ResultWindow.New(g:vimclojure#ClojureResultBuffer)
-	let b:vimclojure_namespace = ns
-	call resultBuffer.showOutput(result)
-	wincmd p
+	call vimclojure#ShowClojureResult(result, ns)
 endfunction
 
 function! ClojureEvalParagraphWorker() dict
@@ -761,10 +738,7 @@ function! vimclojure#EvalParagraph()
 	let result = vimclojure#ExecuteNailWithInput("Repl", content,
 				\ "-r", "-n", ns, "-f", file, "-l", startPosition - 1)
 
-	let buf = g:vimclojure#ResultWindow.New(g:vimclojure#ClojureResultBuffer)
-	let b:vimclojure_namespace = ns
-	call resultBuffer.showOutput(result)
-	wincmd p
+	call vimclojure#ShowClojureResult(result, ns)
 endfunction
 
 " The Repl
@@ -947,8 +921,7 @@ function! vimclojure#Repl.enterHook() dict
 	if result.value == 0 && result.stderr == ""
 		call vimclojure#ReplDoEnter()
 	elseif result.stderr != ""
-		let buf = g:vimclojure#ResultWindow.New(g:vimclojure#ResultBuffer)
-		call buf.showOutput(result)
+		call vimclojure#ShowResult(result)
 	else
 		let result = vimclojure#ExecuteNailWithInput("Repl", cmd,
 					\ "-r", "-i", self._id)
