@@ -321,14 +321,16 @@ endfunction
 
 function! vimclojure#Window.Init(buftype) dict
 	call self.__superObjectInit()
-	let self._window = winnr()
+	let w:vimclojure_window = self
 	let self._buffer = a:buftype.New()
 endfunction
 
 function! vimclojure#Window.goHere() dict
-	if winnr() != self._window
-		execute self._window "wincmd w"
+	let wn = self.findThis()
+	if wn == -1
+		echoerr 'A crisis has arisen! Cannot find my window.'
 	endif
+	execute wn . "wincmd w"
 	call self._buffer.goHere()
 endfunction
 
@@ -366,8 +368,19 @@ function! vimclojure#Window.clear() dict
 endfunction
 
 function! vimclojure#Window.close() dict
-	close!
 	call self._buffer.close()
+endfunction
+
+function! vimclojure#Window.findThis() dict
+	for w in range(1, winnr("$"))
+		if type(getwinvar(w, "vimclojure_window")) == type({})
+			if getwinvar(w, "vimclojure_window") == self
+				return w
+			endif
+		endif
+	endfor
+
+	return -1
 endfunction
 
 " The transient buffer, used to display results.
