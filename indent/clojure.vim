@@ -251,6 +251,12 @@ setlocal lispwords+=defonce,defvar,defvar-,defunbound,let,fn,letfn,binding,proxy
 setlocal lispwords+=defnk,definterface,defprotocol,deftype,defrecord,reify
 setlocal lispwords+=extend,extend-protocol,extend-type,bound-fn
 
+" Tests:
+setlocal lispwords=deftest,deftest-,set-test
+setlocal lispwords=with-test,with-test-out,with-junit-output,with-tap-output
+setlocal lispwords=is,are
+setlocal lispwords=testing,try-expr
+
 " Conditionals and Loops:
 setlocal lispwords+=if,if-not,if-let,when,when-not,when-let,when-first
 setlocal lispwords+=condp,case,loop,dotimes,for,while
