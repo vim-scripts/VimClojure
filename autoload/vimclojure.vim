@@ -741,7 +741,7 @@ endfunction
 function! vimclojure#EvalParagraph()
 	let file = vimclojure#BufferName()
 	let ns = b:vimclojure_namespace
-	let startPosition = line(".")
+	let startPosition = line("'{")
 
 	let closure = { 'f' : function("ClojureEvalParagraphWorker") }
 
