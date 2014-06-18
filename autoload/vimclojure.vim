@@ -1074,7 +1074,7 @@ function! vimclojure#InitBuffer(...)
 					if a:000 == []
 						call vimclojure#ReportError(
 									\ "Could not determine the Namespace of the file.\n\n"
-									\ . "This might have different reasons. Please check, that the ng server\n"
+									\ . "This might have different reasons. Please check that the ng server\n"
 									\ . "is running with the correct classpath and that the file does not contain\n"
 									\ . "syntax errors. The interactive features will not be enabled, ie. the\n"
 									\ . "keybindings will not be mapped.\n\nReason:\n" . v:exception)
