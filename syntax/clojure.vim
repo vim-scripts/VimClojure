@@ -70,7 +70,7 @@ if g:vimclojure#HighlightBuiltins != 0
 		\            . "bit-and bit-or bit-xor bit-not bit-shift-left "
 		\            . "bit-shift-right symbol keyword gensym count conj seq "
 		\            . "first rest ffirst fnext nfirst nnext second every? "
-		\            . "not-every? some not-any? concat reverse cycle "
+		\            . "not-every? some some? not-any? concat reverse cycle "
 		\            . "interleave interpose split-at split-with take "
 		\            . "take-nth take-while drop drop-while repeat replicate "
 		\            . "iterate range into distinct sort sort-by zipmap "
